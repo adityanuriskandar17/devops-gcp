@@ -720,11 +720,388 @@ Contoh berikut menggunakan pola **Dashboard → Add widget → Metric** lalu **L
 
 ---
 
+## Configure Widget — Panel Lengkap
+
+Saat klik **Add Widget → Metric** atau klik **Edit** pada widget yang sudah ada, Console menampilkan panel **Configure widget**. Berikut penjelasan lengkap setiap bagian.
+
+### Layout Panel Configure Widget
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Configure widget                                         [📋] [📊] │
+│                                                                     │
+│  Queries   [+ ADD QUERY]   [÷ CREATE RATIO]                        │
+│                                                                     │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │ A  Metric │VM Instance - CPU utilization ▼│ ⓘ              │    │
+│  │   Filter │Add filter        │ Aggregation │Unaggregated ▼│ │    │
+│  │   🔥  [+]                                                   │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                                                                     │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │ B  Metric │VM Instance - CPU utilization ▼│ ⓘ              │    │
+│  │   Filter │Add filter        │ Aggregation │Sum ▼│ by │None▼││    │
+│  │   🔥  [+]                                                   │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                                                                     │
+│  ┌────────┬────────┬────────┐                                       │
+│  │ CHART  │ TABLE  │  BOTH  │  ← view mode toggle                  │
+│  └────────┴────────┴────────┘                                       │
+│                                                                     │
+│  ┌──────────────────────┐  ┌────────────────────────────────────┐   │
+│  │                      │  │ ☰ Filter: Enter property or value  │   │
+│  │   (Chart preview)    │  │                                    │   │
+│  │                      │  │ ☐ Metric                           │   │
+│  │   📈 ───╱╲───╱──── │  │   Loading contents...              │   │
+│  │                      │  │                                    │   │
+│  └──────────────────────┘  └────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Penjelasan Setiap Elemen
+
+| Elemen | Lokasi | Fungsi |
+|--------|--------|--------|
+| **Queries** | Header atas | Label section — menunjukkan semua query dalam widget ini |
+| **+ ADD QUERY** | Sebelah "Queries" | Menambah query baru (B, C, D, ...) ke widget yang sama |
+| **÷ CREATE RATIO** | Sebelah "+ ADD QUERY" | Membuat formula rasio antar query (misal A/B) |
+| **A / B / C** | Label kiri tiap query | Identifier query — setiap query punya label huruf |
+| **Metric** dropdown | Tiap query row | Pilih resource type + metric (VM, GKE, Cloud SQL, dll) |
+| **ⓘ** | Sebelah metric | Info tooltip tentang metric yang dipilih |
+| **Filter** | Tiap query row | Tambah filter label (zone, instance_name, dll) |
+| **Aggregation** dropdown | Tiap query row | Cara menggabungkan data (Unaggregated, Sum, Mean, Max, dll) |
+| **by** dropdown | Setelah Aggregation | Group by label (None, zone, instance_name, dll) |
+| **🔥** (flame icon) | Tiap query row | Toggle: tampilkan/sembunyikan query di chart |
+| **[+]** button | Ujung kanan tiap row | Tambah elemen query (Min interval, Configure aligner, Sort & limit) |
+| **CHART / TABLE / BOTH** | Bawah queries | Toggle tampilan: grafik saja, tabel saja, atau keduanya |
+| **Chart preview** | Area kiri bawah | Preview real-time dari query yang dikonfigurasi |
+| **Filter panel** (kanan) | Area kanan bawah | Detail filter tambahan, property browser |
+
+---
+
+## + ADD QUERY — Multiple Queries
+
+Fitur ini memungkinkan **menampilkan beberapa metric berbeda dalam 1 chart** yang sama, masing-masing sebagai garis terpisah.
+
+### Cara Menggunakan
+
+```
+Console: Configure widget → klik [+ ADD QUERY]
+
+  Sebelum (1 query):
+  ┌────────────────────────────────────────┐
+  │ A  CPU utilization  │ Unaggregated    │
+  └────────────────────────────────────────┘
+
+  Sesudah (2 query):
+  ┌────────────────────────────────────────┐
+  │ A  CPU utilization  │ Unaggregated    │
+  └────────────────────────────────────────┘
+  ┌────────────────────────────────────────┐
+  │ B  Memory utilization │ Mean           │
+  └────────────────────────────────────────┘
+
+  Chart preview:
+   100%│
+    80%│    ╱╲         ← Query A (CPU) — biru
+    60%│  ╱╱  ╲╲
+    40%│╱╱      ╲───── ← Query B (Memory) — oranye
+    20%│
+       └──────────────── time
+```
+
+### Kapan Pakai Multiple Queries?
+
+| Skenario | Query A | Query B | Tujuan |
+|----------|---------|---------|--------|
+| **CPU vs Memory** | CPU utilization | Memory utilization | Lihat korelasi — CPU tinggi karena memory swap? |
+| **Request vs Error** | Total requests/sec | Error requests/sec | Bandingkan volume traffic vs error |
+| **Disk Read vs Write** | Disk read bytes | Disk write bytes | Identifikasi pattern I/O |
+| **Inbound vs Outbound** | Network received bytes | Network sent bytes | Bandingkan traffic masuk vs keluar |
+| **DB Connections vs CPU** | Cloud SQL connections | Cloud SQL CPU | Apakah koneksi tinggi menyebabkan CPU tinggi? |
+
+### Contoh: CPU vs Memory pada VM
+
+```
+Query A:
+  Metric:      VM Instance → CPU utilization
+  Filter:      instance_name = "web-prod-1"
+  Aggregation: Mean
+
+Query B:
+  Metric:      VM Instance → Memory utilization
+  Filter:      instance_name = "web-prod-1"
+  Aggregation: Mean
+
+Hasil chart:
+  ┌──────────────────────────────────────────┐
+  │ 100%│                                     │
+  │  80%│    ╱╲    ╱╲     ← A: CPU (biru)    │
+  │  60%│───╱──╲──╱──╲───                     │
+  │  40%│ ╱      ╲        ← B: Memory (hijau)│
+  │  20%│╱────────╲───────                     │
+  │     └────────────────── time               │
+  │  ── A: CPU utilization                     │
+  │  ── B: Memory utilization                  │
+  └──────────────────────────────────────────┘
+```
+
+| Kelebihan | Kekurangan |
+|-----------|------------|
+| Korelasi visual langsung dalam 1 chart | Scale Y-axis bisa berbeda (CPU 0-100%, Memory 0-100% OK, tapi CPU vs Network bytes = beda unit) |
+| Hemat space dashboard (1 widget vs 2) | Terlalu banyak query (5+) = chart jadi cluttered |
+| Mudah spot pattern bersamaan | Warna garis bisa sulit dibedakan jika banyak series |
+
+**Tips:** Maksimal **3-4 query** per chart agar tetap readable. Jika lebih, buat chart terpisah.
+
+---
+
+## ÷ CREATE RATIO — Formula Antar Query
+
+Fitur ini membuat **perhitungan rasio** antar 2 query — sangat berguna untuk menghitung **error rate, hit ratio, utilization percentage**, dll.
+
+### Cara Menggunakan
+
+```
+Console: Configure widget → klik [÷ CREATE RATIO]
+
+  Otomatis membuat:
+  ┌────────────────────────────────────────┐
+  │ A  (numerator)   │ metric pilihan     │
+  └────────────────────────────────────────┘
+  ┌────────────────────────────────────────┐
+  │ B  (denominator)  │ metric pilihan     │
+  └────────────────────────────────────────┘
+  ┌────────────────────────────────────────┐
+  │ A/B  Ratio                             │  ← auto-generated
+  └────────────────────────────────────────┘
+
+  Chart menampilkan HASIL BAGI A / B
+```
+
+### Flow: Menghitung Error Rate
+
+```
+Tujuan: Error Rate = 5xx Errors / Total Requests
+
+  Step 1: Klik [÷ CREATE RATIO]
+
+  Step 2: Konfigurasi Query A (numerator = pembilang)
+    Metric:  HTTP Load Balancer → Request count
+    Filter:  response_code_class = 500
+    Aggregation: Sum
+
+  Step 3: Konfigurasi Query B (denominator = penyebut)
+    Metric:  HTTP Load Balancer → Request count
+    Filter:  (tanpa filter = semua request)
+    Aggregation: Sum
+
+  Step 4: Ratio otomatis dihitung
+    A/B = 5xx errors / total requests = Error Rate
+
+  Hasil:
+    ┌──────────────────────────────────────────┐
+    │ 5%  │                                     │
+    │ 4%  │         ╱╲                          │
+    │ 3%  │        ╱  ╲     ← Error Rate       │
+    │ 2%  │───────╱    ╲──────                  │
+    │ 1%  │──────╱      ╲────                   │
+    │ 0%  │─────╱                               │
+    │     └────────────────── time               │
+    │  ── A/B: Error rate                        │
+    └──────────────────────────────────────────┘
+```
+
+### Contoh Ratio yang Sering Digunakan
+
+| Ratio | Query A (Numerator) | Query B (Denominator) | Hasil | Kegunaan |
+|-------|--------------------|-----------------------|-------|----------|
+| **Error Rate** | HTTP 5xx count | Total request count | % error | SLI utama untuk web service |
+| **Cache Hit Ratio** | CDN cache hit count | Total CDN request count | % cache hit | Performa CDN |
+| **Success Rate** | HTTP 2xx count | Total request count | % success | Kebalikan error rate |
+| **Memory Usage %** | Memory used bytes | Memory total bytes | % memory | Jika metric % tidak tersedia |
+| **Disk Usage %** | Disk used bytes | Disk total bytes | % disk | Custom disk monitoring |
+
+| Kelebihan | Kekurangan |
+|-----------|------------|
+| Hitung derived metric tanpa custom code | Hanya mendukung operasi **pembagian** (A / B) |
+| Sangat berguna untuk SLI/SLO (error rate, availability) | Kedua query harus punya **time alignment** yang sama |
+| Real-time calculation | Jika denominator = 0, hasilnya undefined/NaN |
+| Bisa di-alert juga (misal error rate > 2%) | Tidak bisa operasi lain (A + B, A - B, A × B) |
+
+---
+
+## CHART / TABLE / BOTH — View Mode
+
+Toggle di bawah queries untuk mengubah cara hasil ditampilkan.
+
+```
+┌────────┬────────┬────────┐
+│ CHART  │ TABLE  │  BOTH  │
+└────────┴────────┴────────┘
+```
+
+### CHART Mode
+
+Menampilkan data sebagai **grafik visual** (line, bar, area, dll).
+
+```
+  100%│
+   80%│    ╱╲
+   60%│───╱──╲────
+   40%│──╱    ╲───
+   20%│─╱      ╲──
+      └───────────── time
+```
+
+**Cocok untuk:** Melihat trend over time, pattern, anomaly.
+
+### TABLE Mode
+
+Menampilkan data sebagai **tabel angka** — menunjukkan setiap time series dengan value terkini.
+
+```
+  ┌──────────────────┬──────────┬───────────┐
+  │ Instance         │ Zone     │ CPU (now) │
+  ├──────────────────┼──────────┼───────────┤
+  │ web-prod-1       │ asia-se2 │ 72.3%     │
+  │ web-prod-2       │ asia-se2 │ 45.1%     │
+  │ api-server-1     │ asia-se2 │ 88.7%     │ ← tertinggi
+  │ worker-1         │ asia-se2 │ 23.4%     │
+  └──────────────────┴──────────┴───────────┘
+```
+
+**Cocok untuk:** Melihat nilai exact per resource, ranking, current state.
+
+### BOTH Mode
+
+Menampilkan **chart + table** secara bersamaan — chart di kiri, table di kanan.
+
+```
+  ┌───────────────────┬────────────────────────┐
+  │  (Chart)          │  (Table)               │
+  │                   │                        │
+  │  100%│            │  Instance    │ CPU     │
+  │   80%│  ╱╲        │  web-prod-1  │ 72.3%  │
+  │   60%│─╱──╲──     │  web-prod-2  │ 45.1%  │
+  │   40%│╱    ╲──    │  api-server  │ 88.7%  │
+  │      └──────────  │  worker-1    │ 23.4%  │
+  └───────────────────┴────────────────────────┘
+```
+
+**Cocok untuk:** Troubleshooting — lihat trend + identifikasi resource spesifik.
+
+### Perbandingan View Mode
+
+| Mode | Visual | Data Exact | Trend | Cocok Untuk |
+|------|--------|-----------|-------|-------------|
+| **CHART** | Ya | Tidak (hover untuk value) | Ya | Monitoring overview, pattern detection |
+| **TABLE** | Tidak | Ya (semua value terlihat) | Tidak | Ranking, current state check |
+| **BOTH** | Ya | Ya | Ya | Troubleshooting, presentasi ke tim |
+
+---
+
+## Tombol [+] — Add Query Element
+
+Tombol **[+]** di ujung kanan setiap query row membuka elemen konfigurasi tambahan.
+
+```
+Klik [+] → pilih elemen:
+
+  ┌─────────────────────────┐
+  │ Min interval            │  → Set alignment period (1m, 5m, 1h)
+  │ Configure aligner       │  → Override default aligner (rate, delta, dll)
+  │ Sort & limit            │  → Top N / Bottom N time series
+  │ Add filter              │  → Tambah filter label
+  └─────────────────────────┘
+```
+
+| Elemen | Fungsi | Kapan Digunakan |
+|--------|--------|-----------------|
+| **Min interval** | Set periode alignment (misal 1m = 1 data point per menit) | Saat ingin kontrol resolusi data |
+| **Configure aligner** | Override cara data di-align (rate, delta, count_true, dll) | Saat metric cumulative counter (perlu rate) |
+| **Sort & limit** | Tampilkan hanya Top 5 / Bottom 5 series | Saat terlalu banyak series, fokus ke outlier |
+| **Add filter** | Tambah filter label tambahan | Saat perlu narrow down data lebih spesifik |
+
+---
+
+## Tombol 🔥 — Enable/Disable Query
+
+Ikon **🔥** (flame) pada setiap query row berfungsi untuk **toggle visibility** query di chart tanpa menghapusnya.
+
+```
+🔥 aktif (default):  Query ditampilkan di chart
+🔥 non-aktif:        Query disembunyikan dari chart (tapi config tetap ada)
+```
+
+| Kelebihan | Kekurangan |
+|-----------|------------|
+| Bisa compare dengan cepat (hide/show query) | Mudah lupa query yang tersembunyi |
+| Tidak perlu hapus query untuk test | — |
+
+---
+
+## Contoh Lengkap: Dashboard Widget dengan Multiple Queries + Ratio
+
+### Skenario: Production API Health Dashboard
+
+```
+Widget 1: "Request Volume vs Error Volume"
+  Query A: Load Balancer → Request count (Sum)
+  Query B: Load Balancer → Request count, filter: response_code_class=500 (Sum)
+  Mode: BOTH (chart + table)
+
+Widget 2: "Error Rate" (Ratio)
+  CREATE RATIO:
+    A: 5xx request count (Sum)
+    B: Total request count (Sum)
+  Ratio: A/B → error rate %
+  Threshold: Garis merah di 2%
+  Mode: CHART
+
+Widget 3: "CPU vs Memory vs Connections" (Multi-query)
+  Query A: Cloud SQL → CPU utilization (Mean)
+  Query B: Cloud SQL → Memory utilization (Mean)
+  Query C: Cloud SQL → Connections (Sum)
+  Mode: CHART
+```
+
+```
+Dashboard result:
+
+  ┌─────────────────────────┐  ┌─────────────────────────┐
+  │ Widget 1: Req vs Error  │  │ Widget 2: Error Rate    │
+  │                         │  │                         │
+  │ 1000│──A──────────────  │  │ 5%│                     │
+  │  800│     ╲             │  │ 4%│                     │
+  │  600│      ╲────────    │  │ 3%│        ╱╲           │
+  │   50│──B────────────── │  │ 2%│─ ─ ─ ╱─ ╲─ ─ ← 2%  │
+  │     └─────────── time   │  │ 1%│────╱    ╲────      │
+  │ A=Total  B=5xx errors   │  │   └────────── time      │
+  └─────────────────────────┘  └─────────────────────────┘
+  ┌─────────────────────────────────────────────────────┐
+  │ Widget 3: Cloud SQL — CPU vs Memory vs Connections  │
+  │                                                     │
+  │ 100%│   ╱╲                                          │
+  │  80%│──A╱──╲──── ← CPU (biru)                      │
+  │  60%│─╱B────╲─── ← Memory (hijau)                  │
+  │  40%│╱       ╲──                                    │
+  │  20%│C─────────── ← Connections (normalized, oranye)│
+  │     └──────────────── time                           │
+  └─────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Ringkasan cepat untuk operator
 
 - Mulai dari **resource + metric** yang benar, lalu **filter** cardinality, lalu **aggregation + group by**, baru **display** (mode, threshold, compare).
+- Gunakan **+ ADD QUERY** untuk korelasi visual (CPU vs Memory, Request vs Error).
+- Gunakan **÷ CREATE RATIO** untuk derived metrics (error rate, cache hit ratio).
+- Gunakan **BOTH** view mode saat troubleshooting — chart untuk trend, table untuk exact values.
 - Jika chart penuh sesak, urutkan strategi: **filter** → **group/mean** → **Sort & limit** → **X-Ray**.
 - **Compare to past** hanya untuk **line chart**; pastikan **time range** dashboard cukup panjang agar pola terlihat.
+- Maksimal **3-4 query** per widget agar chart tetap readable.
 
 ---
 
