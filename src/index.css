@@ -1,0 +1,186 @@
+@import "tailwindcss";
+
+:root {
+  --sidebar-width: 280px;
+  --content-max: 52rem;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #1e293b;
+  background: #f8fafc;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ─── Markdown Body ─── */
+.markdown-body {
+  font-size: 0.9375rem;
+  line-height: 1.8;
+  color: #334155;
+}
+
+.markdown-body > *:first-child { margin-top: 0; }
+
+.markdown-body h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 2rem 0 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e2e8f0;
+  letter-spacing: -0.025em;
+}
+
+.markdown-body h2 {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #1e40af;
+  margin: 2rem 0 0.75rem;
+  letter-spacing: -0.015em;
+}
+
+.markdown-body h3 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.markdown-body h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #334155;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.markdown-body p {
+  margin: 0.75rem 0;
+  line-height: 1.8;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
+.markdown-body li {
+  margin: 0.35rem 0;
+  line-height: 1.8;
+}
+
+.markdown-body li::marker {
+  color: #94a3b8;
+}
+
+.markdown-body strong { color: #0f172a; }
+
+.markdown-body a {
+  color: #2563eb;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s;
+}
+.markdown-body a:hover {
+  border-bottom-color: #2563eb;
+}
+
+.markdown-body hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #cbd5e1, transparent);
+  margin: 2rem 0;
+}
+
+/* ─── Code ─── */
+.markdown-body pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  overflow-x: auto;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  margin: 1.25rem 0;
+  border: 1px solid #1e293b;
+}
+
+.markdown-body code:not(pre code) {
+  background: #f1f5f9;
+  color: #be185d;
+  padding: 0.15rem 0.45rem;
+  border-radius: 5px;
+  font-size: 0.84em;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+}
+
+/* ─── Tables ─── */
+.markdown-body table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1.25rem 0;
+  font-size: 0.84rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.markdown-body th {
+  background: #f1f5f9;
+  font-weight: 600;
+  color: #1e293b;
+  padding: 0.625rem 0.875rem;
+  text-align: left;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.markdown-body td {
+  padding: 0.5rem 0.875rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #475569;
+  vertical-align: top;
+}
+
+.markdown-body tr:last-child td { border-bottom: none; }
+
+.markdown-body tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* ─── Blockquote ─── */
+.markdown-body blockquote {
+  border-left: 3px solid #3b82f6;
+  background: linear-gradient(to right, #eff6ff, transparent);
+  margin: 1.25rem 0;
+  padding: 0.875rem 1.25rem;
+  border-radius: 0 10px 10px 0;
+  color: #334155;
+}
+
+.markdown-body blockquote p {
+  margin: 0.25rem 0;
+}
+
+/* ─── Highlight for search ─── */
+.search-highlight {
+  transition: background-color 0.4s ease;
+  border-radius: 4px;
+}
+
+/* ─── Editor overrides ─── */
+.w-md-editor {
+  border-radius: 12px !important;
+}
