@@ -17,7 +17,7 @@ Catatan dan dokumentasi DevOps untuk infrastruktur GCP.
 | Cloud Storage | [Cloud-Storage/](Cloud-Storage/) | Storage classes, Autoclass, lifecycle, access control, pricing |
 | Cloud SQL | [Cloud-SQL/](Cloud-SQL/) | MySQL, PostgreSQL, SQL Server — create, HA, backup, migration, pricing |
 | Compute Engine | [Compute-Engine/](Compute-Engine/) | VM instances, machine types, disks, networking, SSH, monitoring |
-| Cloud Monitoring | [Cloud-Monitoring/](Cloud-Monitoring/) | Monitoring, Logging, Dashboard, Widgets, Alerting, Uptime Checks |
+| Cloud Monitoring | [Cloud-Monitoring/](Cloud-Monitoring/) | Monitoring, Logging, Dashboard, Widgets, Alerting, Uptime Checks, Synthetic Monitoring |
 | GKE | [GKE/](GKE/) | Kubernetes Engine — cluster, workloads, scaling, networking, security |
 
 ### Cloud CDN
@@ -98,6 +98,7 @@ Catatan dan dokumentasi DevOps untuk infrastruktur GCP.
 | 07 | [Cloud Logging](Cloud-Monitoring/07-logging.md) | Log Explorer, query, log-based metrics, log routing/sinks |
 | 08 | [Pricing](Cloud-Monitoring/08-pricing.md) | Komponen biaya monitoring & logging, free tier, tips hemat |
 | 09 | [Best Practices](Cloud-Monitoring/09-best-practices.md) | Golden Signals, alert strategy, logging best practices, checklist |
+| 10 | [Synthetic Monitoring](Cloud-Monitoring/10-synthetic-monitoring.md) | Custom script, broken link checker, Mocha template, Cloud Function |
 
 ### GKE (Google Kubernetes Engine)
 

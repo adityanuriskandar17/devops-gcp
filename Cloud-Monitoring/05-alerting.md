@@ -1230,45 +1230,172 @@ Result:  [ALERT] High CPU - Production VMs on asia-southeast2-a
 
 ##### MANAGE NOTIFICATION CHANNELS
 
-Klik tombol ini akan **membuka tab baru** ke halaman konfigurasi channel:
+Klik tombol ini akan **membuka panel/tab** ke halaman konfigurasi channel.
+
+**Console:** Monitoring → Alerting → **Notification channels** (atau klik MANAGE NOTIFICATION CHANNELS dari Create Policy)
+
+#### Layout Halaman Notification Channels
 
 ```
-Console: Monitoring → Alerting → Edit notification channels
-
-  ┌───────────────────────────────────────────────────────────┐
-  │  Notification channels                                     │
-  │                                                           │
-  │  Email                              [+ ADD NEW]           │
-  │  ├─ ops@company.com               ✏️ 🗑                   │
-  │                                                           │
-  │  Slack                              [+ ADD NEW]           │
-  │  ├─ #ops-alerts (workspace: Acme)  ✏️ 🗑                   │
-  │                                                           │
-  │  PagerDuty                          [+ ADD NEW]           │
-  │  ├─ (none configured)                                     │
-  │                                                           │
-  │  Webhooks                           [+ ADD NEW]           │
-  │  ├─ (none configured)                                     │
-  │                                                           │
-  │  SMS                                [+ ADD NEW]           │
-  │  ├─ (none configured)                                     │
-  │                                                           │
-  │  Pub/Sub                            [+ ADD NEW]           │
-  │  ├─ (none configured)                                     │
-  │                                                           │
-  │  Google Chat                        [+ ADD NEW]           │
-  │  ├─ (none configured)                                     │
-  │                                                           │
-  │  Cloud Console (Mobile)             [+ ADD NEW]           │
-  │  ├─ (none configured)                                     │
-  │                                                           │
-  └───────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────┐
+│  Notification channels                                            ✕  │
+│                                                                      │
+│  ────────────────────────────────────────────────────────────────     │
+│  Mobile Devices (via Cloud Mobile App ↗)                  ADD NEW    │
+│  ┌──────────────────────────────────────────────────────────────┐    │
+│  │ ⓘ Monitoring now supports both user-scoped and device-scoped │    │
+│  │   Cloud Console Mobile notification channels  LEARN MORE  DISMISS│ │
+│  └──────────────────────────────────────────────────────────────┘    │
+│  No mobile devices configured                                        │
+│                                                                      │
+│  ────────────────────────────────────────────────────────────────     │
+│  Google Chat  PREVIEW                                     ADD NEW    │
+│  No Google Chat channels configured                                  │
+│                                                                      │
+│  ────────────────────────────────────────────────────────────────     │
+│  PagerDuty Services                                       ADD NEW    │
+│  No PagerDuty services configured                                    │
+│                                                                      │
+│  ────────────────────────────────────────────────────────────────     │
+│  PagerDuty Sync  BETA                                     ADD NEW    │
+│  No PagerDuty Sync channels configured                               │
+│                                                                      │
+│  ────────────────────────────────────────────────────────────────     │
+│  Slack ⓘ                                                  ADD NEW    │
+│  No Slack channels configured                                        │
+│                                                                      │
+│  ────────────────────────────────────────────────────────────────     │
+│  Webhooks                                                 ADD NEW    │
+│  No webhook channels configured                                      │
+│                                                                      │
+│  ────────────────────────────────────────────────────────────────     │
+│  Email                                                    ADD NEW    │
+│  ┌──────────────────────────────────────────────────────────────┐    │
+│  │ ≡ Filter │ Filter email addresses                       │ ⓘ │    │
+│  ├────────────────┬────────────────────────────────────────────┤    │
+│  │ Email          │ Display Name                               │    │
+│  ├────────────────┼────────────────────────────────────────────┤    │
+│  │ halo@halo.com  │ halo                                       │    │
+│  └────────────────┴────────────────────────────────────────────┘    │
+│                                                                      │
+│  ────────────────────────────────────────────────────────────────     │
+│  SMS                                                      ADD NEW    │
+│  No SMS channels configured                                          │
+│                                                                      │
+│  ────────────────────────────────────────────────────────────────     │
+│  Pub/Sub                                                  ADD NEW    │
+│  No Pub/Sub channels configured                                      │
+│                                                                      │
+└───────────────────────────────────────────────────────────────────────┘
 ```
 
-**Flow membuat channel baru (contoh: Slack):**
+#### Penjelasan Setiap Channel Type
+
+| No | Channel | Label | Fungsi | Konfigurasi |
+|----|---------|-------|--------|-------------|
+| 1 | **Mobile Devices** | — | Push notification ke **Cloud Console Mobile App** di smartphone | Install app → login → device otomatis muncul |
+| 2 | **Google Chat** | **PREVIEW** | Kirim alert ke **Google Chat space** via webhook | Buat webhook di Chat space → paste URL |
+| 3 | **PagerDuty Services** | — | Integrasi **PagerDuty** untuk on-call scheduling & escalation | Integration key dari PagerDuty service |
+| 4 | **PagerDuty Sync** | **BETA** | **Sync 2 arah** antara GCP incidents & PagerDuty incidents — status saling update | PagerDuty API key + service mapping |
+| 5 | **Slack** | — | Kirim alert ke **Slack channel** | OAuth app atau incoming webhook |
+| 6 | **Webhooks** | — | Kirim alert ke **custom HTTP endpoint** (REST API) | URL endpoint + optional auth header |
+| 7 | **Email** | — | Kirim alert ke **email address** | Alamat email + display name |
+| 8 | **SMS** | — | Kirim alert via **SMS** ke nomor telepon | Nomor telepon + verifikasi |
+| 9 | **Pub/Sub** | — | Kirim alert ke **Pub/Sub topic** untuk automation | Topic name di project |
+
+#### PagerDuty Services vs PagerDuty Sync — Apa Bedanya?
 
 ```
-1. Klik [+ ADD NEW] di bagian Slack
+PagerDuty Services (standard):
+  GCP Alert fires → Notifikasi dikirim ke PagerDuty → PagerDuty buat incident
+  (satu arah: GCP → PagerDuty)
+
+PagerDuty Sync (BETA — bidirectional):
+  GCP Alert fires → PagerDuty incident dibuat
+  PagerDuty acknowledge → GCP incident juga acknowledged
+  PagerDuty resolve → GCP incident juga resolved
+  (dua arah: GCP ↔ PagerDuty)
+```
+
+| Aspek | PagerDuty Services | PagerDuty Sync (BETA) |
+|-------|-------------------|----------------------|
+| **Arah** | Satu arah (GCP → PD) | Dua arah (GCP ↔ PD) |
+| **Status sync** | Tidak — harus manage 2 tempat | Ya — acknowledge/resolve auto-sync |
+| **Setup** | Integration key saja | API key + mapping lebih kompleks |
+| **Maturity** | GA (stable) | **BETA** (bisa berubah) |
+| **Rekomendasi** | Untuk kebanyakan tim | Untuk tim yang heavy PagerDuty user |
+
+#### Google Chat [PREVIEW] — Detail
+
+```
+Klik ADD NEW:
+
+  ┌─────────────────────────────────────────────────┐
+  │  Display name: ops-alerts-chat                   │
+  │  Room URL: https://chat.googleapis.com/v1/...    │
+  │                                                 │
+  │  [SAVE]  [SEND TEST NOTIFICATION]               │
+  └─────────────────────────────────────────────────┘
+```
+
+**Catatan PREVIEW:** Fitur masih dalam preview — bisa berubah atau dihapus. Untuk production, lebih aman pakai Slack atau Webhooks.
+
+#### Email Channel — Detail
+
+Berbeda dari channel lain, Email menampilkan **tabel** dengan filter:
+
+```
+  Email                                                    ADD NEW
+
+  ┌──────────────────────────────────────────────────────────────┐
+  │ ≡ Filter │ Filter email addresses                       │ ⓘ │
+  ├────────────────┬─────────────────────────────────────────────┤
+  │ Email          │ Display Name                                │
+  ├────────────────┼─────────────────────────────────────────────┤
+  │ halo@halo.com  │ halo                              ✏️  🗑    │
+  │ ops@company.com│ ops-team                          ✏️  🗑    │
+  └────────────────┴─────────────────────────────────────────────┘
+```
+
+| Kolom | Fungsi |
+|-------|--------|
+| **Email** | Alamat email penerima notifikasi |
+| **Display Name** | Nama yang ditampilkan — muncul saat pilih channel di Create Policy |
+| **✏️** (edit) | Edit email/display name |
+| **🗑** (delete) | Hapus email channel |
+| **Filter** | Search email jika banyak — ketik untuk filter list |
+
+```
+Klik ADD NEW:
+
+  ┌─────────────────────────────────────────────────┐
+  │  Email address: ops@company.com                  │
+  │  Display name: ops-team                          │
+  │                                                 │
+  │  [SAVE]                                          │
+  └─────────────────────────────────────────────────┘
+```
+
+#### Mobile Devices — Info Box
+
+```
+  ⓘ Monitoring now supports both user-scoped and device-scoped
+    Cloud Console Mobile notification channels
+
+    LEARN MORE ↗    DISMISS
+```
+
+| Type | Penjelasan |
+|------|-----------|
+| **User-scoped** | Notifikasi dikirim ke **semua device** milik user tersebut |
+| **Device-scoped** | Notifikasi dikirim ke **device spesifik** saja |
+
+**Cara setup:** Install **Google Cloud Console app** di Android/iOS → login dengan akun GCP → device otomatis terdaftar.
+
+#### Flow Membuat Channel Baru (Contoh: Slack)
+
+```
+1. Klik [ADD NEW] di bagian Slack
        │
        ▼
 2. Form: 
@@ -1786,25 +1913,26 @@ Alert berdasarkan **prediksi** — misal "disk akan penuh dalam 24 jam".
 
 ---
 
-## Notification Channels
+## Notification Channels — Ringkasan
 
-**Console:** Monitoring → Alerting → **Edit notification channels**
+**Console:** Monitoring → Alerting → **Notification channels**
 
-| Channel | Konfigurasi | Cocok Untuk | Kelebihan | Kekurangan |
-|---------|------------|-------------|-----------|------------|
-| **Email** | Alamat email | Semua level alert | Simple, semua orang punya | Bisa masuk spam, lambat dibaca |
-| **Slack** | Webhook URL / Slack app | Tim engineering | Real-time, bisa thread | Butuh setup webhook/app |
-| **PagerDuty** | Integration key | Critical/on-call | Auto-escalation, scheduling | Berbayar, setup lebih kompleks |
-| **Pub/Sub** | Topic name | Custom integration | Flexible, bisa trigger Cloud Function | Butuh coding untuk consume |
-| **Webhooks** | URL endpoint | Custom system | Sangat flexible | Harus maintain endpoint |
-| **SMS** | Phone number | Critical emergency | Pasti dibaca | Mahal, terbatas karakter |
-| **Google Chat** | Space webhook | Tim yang pakai Google Workspace | Integrasi native | Terbatas ke Google Chat |
-| **Mobile App** | Cloud Console app | Ops on-the-go | Push notification | Butuh install app |
+| Channel | Label | Konfigurasi | Cocok Untuk | Kelebihan | Kekurangan |
+|---------|-------|------------|-------------|-----------|------------|
+| **Mobile Devices** | — | Cloud Console Mobile App | Ops on-the-go | Push notification langsung ke HP | Butuh install app |
+| **Google Chat** | PREVIEW | Space webhook URL | Tim Google Workspace | Integrasi native | Masih preview, terbatas ke GChat |
+| **PagerDuty Services** | — | Integration key | Critical/on-call | Auto-escalation, scheduling | Berbayar, setup lebih kompleks |
+| **PagerDuty Sync** | BETA | API key + mapping | Heavy PagerDuty user | Sync 2 arah GCP ↔ PD | Masih beta, setup kompleks |
+| **Slack** | — | OAuth app / webhook | Tim engineering | Real-time, bisa thread | Butuh setup webhook/app |
+| **Webhooks** | — | URL endpoint | Custom system | Sangat flexible, bisa integrasi apapun | Harus maintain endpoint |
+| **Email** | — | Alamat email + display name | Semua level alert | Simple, semua orang punya | Bisa masuk spam, lambat dibaca |
+| **SMS** | — | Phone number | Critical emergency | Pasti dibaca | Mahal, terbatas karakter |
+| **Pub/Sub** | — | Topic name | Automation / custom pipeline | Trigger Cloud Function, flexible | Butuh coding untuk consume |
 
-**Rekomendasi kombinasi:**
+**Rekomendasi kombinasi per severity:**
 
 ```
-Severity Critical:  PagerDuty + Slack + SMS
+Severity Critical:  PagerDuty Services + Slack + SMS
 Severity Error:     Slack + Email
 Severity Warning:   Email saja (atau Slack low-priority channel)
 ```

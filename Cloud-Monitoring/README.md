@@ -50,6 +50,7 @@ Cloud Monitoring adalah **managed observability platform** dari Google Cloud yan
 | 07 | [Cloud Logging](07-logging.md) | Log Explorer, query, log-based metrics, log routing |
 | 08 | [Pricing](08-pricing.md) | Komponen biaya monitoring & logging, free tier |
 | 09 | [Best Practices](09-best-practices.md) | Strategy, checklist, tips hemat |
+| 10 | [Synthetic Monitoring](10-synthetic-monitoring.md) | Custom script, broken link checker, Mocha template, Cloud Function |
 
 ---
 
