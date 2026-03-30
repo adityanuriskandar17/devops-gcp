@@ -716,6 +716,272 @@ describe('Database Health', function () {
 
 ---
 
+## Halaman Synthetic Monitor Details
+
+Setelah synthetic monitor dibuat dan Cloud Function di-deploy, kamu bisa melihat detail monitor di halaman **Synthetic monitor details**.
+
+**Console:** Monitoring → Synthetic monitoring → klik nama monitor
+
+### Layout Halaman
+
+```
+┌───────────────────────────────────────────────────────────────────────┐
+│  ← Synthetic monitor details          ✏ EDIT   📋 COPY   🗑 DELETE   │
+│                                                                       │
+│  ● fc-syntetic-1                                                      │
+│                                                                       │
+│  ⚠ Cloud Function still deploying for this Synthetic monitor.        │
+│    Please wait for it to finish deploying.                            │
+│                                                                       │
+│  ┌──────────┬──────────┐                                              │
+│  │ OVERVIEW │   CODE   │  ← tabs                                     │
+│  └──────────┴──────────┘                                              │
+│                                                                       │
+│  Cloud function: fc-syntetic-1 ↗   Function region: asia-southeast2  │
+│  Last deployed: Sep 7, 2024, 7:07:01 AM                              │
+│                                                                       │
+│  ┌────────────────┐  ┌────────────────────────────────────────────┐  │
+│  │ File tree      │  │ Code viewer                                │  │
+│  │                │  │                                            │  │
+│  │ 📄 index.js    │  │  1│ // Copyright 2023 Google LLC           │  │
+│  │ 📄 package.json│  │  2│ //                                     │  │
+│  │                │  │ ...│ // (license header)                    │  │
+│  │                │  │ 15│ const { instantiateAutoInstrumen...     │  │
+│  │                │  │ 16│ // Run instantiateAutoInstrum...        │  │
+│  │                │  │ 17│ instantiateAutoInstrumentation();       │  │
+│  │                │  │ 18│ const functions = require('@google...   │  │
+│  │                │  │ 19│ const axios = require('axios');         │  │
+│  │                │  │ 20│ const assert = require('node:assert'); │  │
+│  │                │  │ 21│                                        │  │
+│  │                │  │ 22│ functions.http('SyntheticFunction',    │  │
+│  │                │  │   │  runSyntheticHandler(async ({logger,   │  │
+│  │                │  │   │  executionId}) => {                     │  │
+│  │                │  │ ...│  // test logic                         │  │
+│  │                │  │ 31│ }));                                    │  │
+│  └────────────────┘  └────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+### Header — Tombol Aksi
+
+| Tombol | Fungsi |
+|--------|--------|
+| **✏ EDIT** | Edit konfigurasi monitor (name, frequency, timeout, function, alert) |
+| **📋 COPY** | Duplikasi monitor — buat salinan dengan konfigurasi yang sama |
+| **🗑 DELETE** | Hapus synthetic monitor (Cloud Function tetap ada, harus hapus terpisah jika tidak dibutuhkan) |
+
+### Status Indicator
+
+```
+● fc-syntetic-1       ← status dot
+
+  ● (hijau)  = PASSING — check terakhir berhasil
+  ● (merah)  = FAILING — check terakhir gagal
+  ● (hitam)  = DEPLOYING — Cloud Function masih di-deploy
+  ● (abu)    = UNKNOWN — belum pernah dijalankan
+```
+
+### Warning: Cloud Function Still Deploying
+
+```
+⚠ Cloud Function still deploying for this Synthetic monitor.
+  Please wait for it to finish deploying.
+```
+
+**Apa artinya:** Cloud Function sedang dalam proses build & deploy. Ini normal saat baru membuat monitor — proses deploy biasanya memakan waktu **1-3 menit**. Selama deploying:
+- Monitor **belum aktif** — belum ada check yang dijalankan
+- Tab OVERVIEW belum ada data
+- Tunggu sampai warning hilang, lalu check pertama akan otomatis jalan
+
+### Tab OVERVIEW vs CODE
+
+#### Tab OVERVIEW
+
+Menampilkan **execution history**, success rate, dan detail per-run.
+
+```
+OVERVIEW tab:
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │  Execution History (last 24 hours)                           │
+  │                                                             │
+  │  ✅✅✅✅✅✅✅✅❌✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅  │
+  │                    ↑                                         │
+  │               failure                                        │
+  │                                                             │
+  │  Success rate (24h): 95.8%    Avg duration: 1.2s            │
+  │                                                             │
+  │  Latest execution:                                           │
+  │  ┌─────────────────────────────────────────────────────┐    │
+  │  │ ✅ PASS — 1.2s — Mar 23, 2026, 10:05 AM            │    │
+  │  │ Logger output:                                       │    │
+  │  │   Making an http request using synthetics,           │    │
+  │  │   with execution id: abc123                          │    │
+  │  └─────────────────────────────────────────────────────┘    │
+  │                                                             │
+  │  Recent failed execution:                                    │
+  │  ┌─────────────────────────────────────────────────────┐    │
+  │  │ ❌ FAIL — timeout — Mar 23, 2026, 08:35 AM         │    │
+  │  │ Error: AssertionError: expected 503 to equal 200     │    │
+  │  └─────────────────────────────────────────────────────┘    │
+  └─────────────────────────────────────────────────────────────┘
+```
+
+| Informasi | Fungsi |
+|-----------|--------|
+| **Execution History** | Timeline visual pass/fail tiap eksekusi (24 jam) |
+| **Success rate** | Persentase check berhasil dalam periode tertentu |
+| **Avg duration** | Rata-rata waktu eksekusi |
+| **Latest execution** | Detail run terakhir (status, duration, logger output) |
+| **Failed execution** | Detail kegagalan (error message, stack trace) |
+
+#### Tab CODE
+
+Menampilkan **source code** Cloud Function yang digunakan monitor.
+
+```
+CODE tab:
+
+  Cloud function: fc-syntetic-1 ↗     ← link ke Cloud Function di Console
+  Function region: asia-southeast2
+  Last deployed: Sep 7, 2024, 7:07:01 AM
+
+  ┌────────────────┐  ┌────────────────────────────────────────┐
+  │ File tree      │  │ Code viewer (read-only)                │
+  │                │  │                                        │
+  │ 📄 index.js ◀  │  │ (menampilkan isi file yang dipilih)   │
+  │ 📄 package.json│  │                                        │
+  └────────────────┘  └────────────────────────────────────────┘
+```
+
+| Elemen | Fungsi |
+|--------|--------|
+| **Cloud function** (link) | Klik untuk buka Cloud Function di Console (bisa edit code di sana) |
+| **Function region** | Region tempat function di-deploy |
+| **Last deployed** | Kapan terakhir function di-deploy |
+| **File tree** | Daftar file dalam function (index.js, package.json, dll) |
+| **Code viewer** | Read-only viewer — untuk edit, klik EDIT atau buka Cloud Function langsung |
+
+### Info Bar
+
+```
+Cloud function: fc-syntetic-1 ↗   Function region: asia-southeast2
+Last deployed: Sep 7, 2024, 7:07:01 AM
+```
+
+| Field | Fungsi |
+|-------|--------|
+| **Cloud function** | Nama function + link ke halaman Cloud Function di Console |
+| **Function region** | Region deployment (misal: `asia-southeast2`) |
+| **Last deployed** | Timestamp deploy terakhir — berguna untuk track kapan code terakhir diubah |
+
+---
+
+### Default Code Template (Sesuai GCP Console)
+
+Saat membuat **Custom synthetic monitor**, Cloud Function otomatis berisi default template berikut. Ini adalah code **yang sebenarnya** ada di Console (bukan Mocha/Chai seperti template Mocha):
+
+#### index.js (Default)
+
+```javascript
+// Copyright 2023 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// ...
+
+const {
+  instantiateAutoInstrumentation,
+  runSyntheticHandler
+} = require('@google-cloud/synthetics-sdk-api');
+
+instantiateAutoInstrumentation();
+
+const functions = require('@google-cloud/functions-framework');
+const axios = require('axios');
+const assert = require('node:assert');
+
+functions.http('SyntheticFunction', runSyntheticHandler(async ({logger, executionId}) => {
+  /*
+   * This function executes the synthetic code for testing purposes.
+   * If the code runs without errors, the synthetic test is considered successful.
+   * If an error is thrown during execution, the synthetic test is considered failed.
+   */
+  logger.info('Making an http request using synthetics, with execution id: ' + executionId);
+  const url = 'https://www.google.com/'; // URL to send the request to
+  return await assert.doesNotReject(axios.get(url));
+}));
+```
+
+#### Penjelasan Setiap Bagian Code
+
+| Line | Code | Penjelasan |
+|------|------|-----------|
+| 15 | `require('@google-cloud/synthetics-sdk-api')` | SDK resmi Google untuk Synthetic Monitoring — menyediakan `runSyntheticHandler` dan auto-instrumentation |
+| 17 | `instantiateAutoInstrumentation()` | Mengaktifkan **auto-tracing** — otomatis mencatat HTTP requests ke Cloud Trace |
+| 18 | `require('@google-cloud/functions-framework')` | Framework Cloud Functions — wajib untuk register HTTP handler |
+| 19 | `require('axios')` | HTTP client — digunakan untuk membuat request ke target URL |
+| 20 | `require('node:assert')` | Node.js built-in assertion — untuk validasi response |
+| 22 | `functions.http('SyntheticFunction', ...)` | Register handler dengan nama `SyntheticFunction` — **harus cocok** dengan Entry point di Console |
+| 22 | `runSyntheticHandler(async ({logger, executionId}) => {...})` | Wrapper dari SDK — menyediakan `logger` dan `executionId` |
+| 28 | `logger.info(...)` | Log yang muncul di **Cloud Logging** dan di tab OVERVIEW |
+| 29 | `const url = 'https://www.google.com/'` | Target URL — **ganti ini** ke endpoint yang ingin dimonitor |
+| 30 | `assert.doesNotReject(axios.get(url))` | Pastikan request **tidak reject** (tidak error) — jika reject = test FAIL |
+
+#### Cara Modifikasi Default Code
+
+```javascript
+// Ganti URL target:
+const url = 'https://api.myapp.com/health';  // ← URL aplikasi kamu
+
+// Tambah validasi response:
+functions.http('SyntheticFunction', runSyntheticHandler(async ({logger, executionId}) => {
+  logger.info('Checking API health, execution id: ' + executionId);
+
+  const url = 'https://api.myapp.com/health';
+  const response = await axios.get(url);
+
+  // Validasi status code
+  assert.strictEqual(response.status, 200, 'Expected status 200');
+
+  // Validasi response body
+  assert.strictEqual(response.data.status, 'ok', 'Expected status ok');
+  assert.ok(response.data.database === 'connected', 'DB should be connected');
+
+  logger.info('All checks passed!');
+}));
+```
+
+#### Parameter yang Tersedia di Handler
+
+| Parameter | Type | Fungsi |
+|-----------|------|--------|
+| **logger** | Object | Logger yang output-nya muncul di Cloud Logging dan tab OVERVIEW. Methods: `logger.info()`, `logger.warn()`, `logger.error()` |
+| **executionId** | String | ID unik untuk setiap eksekusi — berguna untuk debugging dan tracing |
+
+#### Package yang Digunakan
+
+| Package | Versi | Fungsi |
+|---------|-------|--------|
+| `@google-cloud/synthetics-sdk-api` | latest | SDK utama Synthetic Monitoring — `runSyntheticHandler`, `instantiateAutoInstrumentation` |
+| `@google-cloud/functions-framework` | ^3.x | Framework Cloud Functions — register HTTP handler |
+| `axios` | ^1.x | HTTP client — membuat request |
+| `node:assert` | built-in | Assertion library bawaan Node.js |
+
+**Perbedaan Custom synthetic monitor vs Mocha synthetic monitor:**
+
+| Aspek | Custom (synthetics-sdk-api) | Mocha (synthetics-sdk-mocha) |
+|-------|---------------------------|------------------------------|
+| **SDK** | `@google-cloud/synthetics-sdk-api` | `@google-cloud/synthetics-sdk-mocha` |
+| **Handler** | `runSyntheticHandler` | `runMochaHandler` |
+| **Test structure** | Fungsi biasa + `assert` | Mocha `describe()` + `it()` + `expect()` |
+| **Assertion** | `node:assert` (built-in) | `chai` (expect/should) |
+| **HTTP client** | `axios` (default) | `node-fetch` atau `axios` |
+| **Step visibility** | 1 block — pass/fail keseluruhan | Per `it()` block — lihat step mana yang gagal |
+| **Cocok untuk** | Simple check (1-2 assertions) | Multi-step testing (login flow, API chain) |
+
+---
+
 ## 2. Broken Link Checker — Detail
 
 ### Apa itu?

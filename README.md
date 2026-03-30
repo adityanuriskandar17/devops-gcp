@@ -13,12 +13,27 @@ Catatan dan dokumentasi DevOps untuk infrastruktur GCP.
 
 | Topik | Folder | Keterangan |
 |-------|--------|------------|
+| Cloud Armor | [Cloud-Armor/](Cloud-Armor/) | WAF, DDoS protection, security policies, OWASP rules, rate limiting, adaptive protection |
 | Cloud CDN | [Cloud-CDN/](Cloud-CDN/) | Cloud CDN, Media CDN, caching, security, integrasi Cloud Storage |
-| Cloud Storage | [Cloud-Storage/](Cloud-Storage/) | Storage classes, Autoclass, lifecycle, access control, pricing |
-| Cloud SQL | [Cloud-SQL/](Cloud-SQL/) | MySQL, PostgreSQL, SQL Server — create, HA, backup, migration, pricing |
-| Compute Engine | [Compute-Engine/](Compute-Engine/) | VM instances, machine types, disks, networking, SSH, monitoring |
+| Cloud KMS | [Cloud-KMS/](Cloud-KMS/) | Key Management — encryption keys, key ring, rotation, CMEK, HSM |
 | Cloud Monitoring | [Cloud-Monitoring/](Cloud-Monitoring/) | Monitoring, Logging, Dashboard, Widgets, Alerting, Uptime Checks, Synthetic Monitoring |
+| Cloud SQL | [Cloud-SQL/](Cloud-SQL/) | MySQL, PostgreSQL, SQL Server — create, HA, backup, migration, pricing |
+| Cloud Storage | [Cloud-Storage/](Cloud-Storage/) | Storage classes, Autoclass, lifecycle, access control, pricing |
+| Compute Engine | [Compute-Engine/](Compute-Engine/) | VM instances, machine types, disks, networking, SSH, monitoring |
 | GKE | [GKE/](GKE/) | Kubernetes Engine — cluster, workloads, scaling, networking, security |
+| IAM | [IAM/](IAM/) | Identity & Access Management — users, roles, service accounts, audit |
+
+### Cloud Armor
+
+| # | File | Isi |
+|---|------|-----|
+| -- | [README](Cloud-Armor/README.md) | Overview, arsitektur, quick start |
+| 01 | [Konsep & Cara Kerja](Cloud-Armor/01-concepts.md) | Arsitektur edge network, policy types, flow traffic, skenario pakai/tidak pakai |
+| 02 | [Create Security Policy](Cloud-Armor/02-create-policy.md) | Console walkthrough: create policy, default rule, attach target backend |
+| 03 | [Rules & Conditions](Cloud-Armor/03-rules.md) | Priority, basic/advanced mode, CEL expressions, actions (allow/deny/throttle/ban/redirect) |
+| 04 | [WAF Rules (OWASP)](Cloud-Armor/04-waf-rules.md) | Preconfigured WAF rules, SQL injection, XSS, sensitivity levels, tuning |
+| 05 | [Adaptive Protection & Rate Limiting](Cloud-Armor/05-adaptive-protection.md) | ML DDoS detection, throttle, rate-based ban, bot management, reCAPTCHA |
+| 06 | [Pricing & Best Practices](Cloud-Armor/06-pricing-best-practices.md) | Standard vs Enterprise, estimasi biaya, checklist production |
 
 ### Cloud CDN
 
@@ -100,6 +115,17 @@ Catatan dan dokumentasi DevOps untuk infrastruktur GCP.
 | 09 | [Best Practices](Cloud-Monitoring/09-best-practices.md) | Golden Signals, alert strategy, logging best practices, checklist |
 | 10 | [Synthetic Monitoring](Cloud-Monitoring/10-synthetic-monitoring.md) | Custom script, broken link checker, Mocha template, Cloud Function |
 
+### Cloud KMS (Key Management Service)
+
+| # | File | Isi |
+|---|------|-----|
+| -- | [README](Cloud-KMS/README.md) | Overview, arsitektur, quick start |
+| 01 | [Konsep & Resource Hierarchy](Cloud-KMS/01-concepts.md) | Key ring, key, key version, protection level, envelope encryption |
+| 02 | [Create Key Ring & Key](Cloud-KMS/02-create-key.md) | Console walkthrough: create key ring, create key, semua opsi |
+| 03 | [Key Rotation & Versioning](Cloud-KMS/03-rotation-versioning.md) | Auto-rotation, manual rotation, key versions, destroy/restore |
+| 04 | [Integrasi & Penggunaan](Cloud-KMS/04-integration.md) | CMEK, enkripsi disk/storage/SQL/GKE, envelope encryption, kill switch |
+| 05 | [Pricing & Best Practices](Cloud-KMS/05-pricing-best-practices.md) | Harga per protection level, free tier, compliance, checklist |
+
 ### GKE (Google Kubernetes Engine)
 
 | # | File | Isi |
@@ -116,15 +142,30 @@ Catatan dan dokumentasi DevOps untuk infrastruktur GCP.
 | 09 | [Commands Cheatsheet](GKE/09-commands-cheatsheet.md) | gcloud container + kubectl commands |
 | 10 | [Best Practices](GKE/10-best-practices.md) | Security, scaling, cost, checklist production |
 
+### IAM (Identity & Access Management)
+
+| # | File | Isi |
+|---|------|-----|
+| -- | [README](IAM/README.md) | Overview, arsitektur, quick start |
+| 01 | [Konsep & Cara Kerja](IAM/01-concepts.md) | Resource hierarchy, principals, allow policy, inheritance, flow AuthN/AuthZ |
+| 02 | [Grant Access (Add User)](IAM/02-grant-access.md) | Console walkthrough: GRANT ACCESS, assign role, conditions, edit/revoke, onboarding flow |
+| 03 | [Roles & Permissions](IAM/03-roles.md) | Basic/predefined/custom roles, permissions format, create custom role Console |
+| 04 | [Service Accounts](IAM/04-service-accounts.md) | Create SA, attached SA, Workload Identity Federation, SA keys, authentication flow |
+| 05 | [Best Practices & Audit](IAM/05-best-practices.md) | Least privilege, audit logs, IAM Recommender, org policies, checklist production |
+| 06 | [Google Groups](IAM/06-groups.md) | Create group, manage members, assign IAM role ke group, onboarding/offboarding flow |
+| 07 | [Privileged Access Manager (PAM)](IAM/07-pam.md) | Just-in-Time access, entitlements, grant request, approval workflow, auto-revoke |
+
 ---
 
 ## Topik Selanjutnya (TODO)
 
 - [x] Compute Engine (VM management, instance groups, snapshots)
-- [ ] IAM & Security (service accounts, roles, organization policy)
+- [x] IAM & Security (service accounts, roles, organization policy)
 - [x] Cloud SQL / Database
 - [x] Cloud CDN (Cloud CDN, Media CDN, caching, security)
 - [x] Kubernetes / GKE
 - [x] Cloud Monitoring & Logging
+- [x] Cloud KMS (Key Management Service)
+- [x] Cloud Armor (WAF & DDoS protection)
 - [ ] CI/CD (Cloud Build, deployment pipelines)
 - [ ] Cost Management (billing alerts, budget, recommendations)
