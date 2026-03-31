@@ -23,13 +23,27 @@ VM Instance adalah server virtual yang berjalan di infrastruktur Google. Dokumen
    - Disk Type
    - Disk Size
    - Deletion Rule
-8. [Identity & API Access](#8-identity--api-access)
-9. [Firewall](#9-firewall)
-10. [Advanced: Networking](#10-advanced-networking)
-11. [Advanced: Disks](#11-advanced-disks)
-12. [Advanced: Security (Shielded VM)](#12-advanced-security-shielded-vm)
-13. [Advanced: Management](#13-advanced-management)
-14. [Advanced: Sole Tenancy](#14-advanced-sole-tenancy)
+8. [Data Protection](#8-data-protection)
+   - Backups (Backup Plan, Snapshot Schedules, No Backups)
+   - Replication (Synchronous, Asynchronous, Exclude Boot Disk)
+9. [Security](#9-security)
+   - Identity and API Access (Service Accounts, Access Scopes)
+   - Confidential VM Service
+   - Shielded VM (Secure Boot, vTPM, Integrity Monitoring)
+   - VM Access (OS Login, SSH Keys, Manage Access)
+10. [Firewall](#10-firewall)
+11. [Advanced: Networking](#11-advanced-networking)
+12. [Advanced: Disks](#12-advanced-disks)
+13. [Advanced: Security (Shielded VM)](#13-advanced-security-shielded-vm)
+14. [Advanced](#14-advanced)
+    - Manage Tags and Labels
+    - Description
+    - Deletion Protection
+    - Reservations
+    - Automation (Startup Script)
+    - Metadata
+    - Data Encryption (Google-managed vs Cloud KMS, CMEK Revocation)
+    - Sole-Tenancy
 15. [Contoh Lengkap gcloud CLI](#15-contoh-lengkap-gcloud-cli)
 16. [Lifecycle & Manage VM](#16-lifecycle--manage-vm)
 
@@ -337,6 +351,8 @@ Spot     : ~$7/bulan  (hemat ~81%)
 
 ## 5. Confidential VM
 
+> **Note:** Di Console, Confidential VM ada di sidebar **Security**. Lihat [Section 9. Security](#9-security) untuk penjelasan lengkap beserta layout Console.
+
 VM dengan enkripsi RAM (memory encryption). Data di RAM tetap terenkripsi bahkan dari Google.
 
 | Opsi | Kelebihan | Kekurangan |
@@ -446,15 +462,389 @@ Apa yang terjadi pada boot disk saat VM dihapus.
 
 ---
 
-## 8. Identity & API Access
+## 8. Data Protection
 
-### Service Account
+> **Console:** Create an instance → sidebar **Data protection**
+
+Section ini mengatur **backup** dan **replication** untuk disk VM. Terlihat di sidebar wizard Create VM antara "OS and storage" dan "Networking".
+
+```
+┌───────────────────────────────────────────────────────────────────────┐
+│  Data protection                                                      │
+│  Protect your data against failures and errors. Learn more ↗          │
+│                                                                       │
+│  ━━━━━━━━ Backups ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│  You can automate recurring backups through a backup plan or          │
+│  snapshot schedule. Learn more ↗                                      │
+│                                                                       │
+│  ○ Backup plan                                                        │
+│    Back up the full VM. These immutable backups are secured by        │
+│    backup vault against accidental or malicious deletion. Managed     │
+│    by Backup and DR Service, a separate service from Compute          │
+│    Engine with independent certifications and accreditation.          │
+│    Learn more ↗                                                       │
+│                                                                       │
+│  ● Snapshot schedules                                                 │
+│    Back up disks only. This provides foundational protection at       │
+│    a lower cost. Learn more ↗                                         │
+│                                                                       │
+│    Select or create a snapshot schedule *                              │
+│    ┌──────────────────────────────────────────────────────────────┐   │
+│    │ default-schedule-1                                         ▼│   │
+│    └──────────────────────────────────────────────────────────────┘   │
+│    Every day, starts between 6:00 AM and 7:00 AM,                     │
+│    Storage location: us (United States)                               │
+│                                                                       │
+│  ○ No backups                                                         │
+│    Neither VM nor disks will be backed up. If data is deleted or      │
+│    corrupted for any reason, you won't be able to recover it.         │
+│                                                                       │
+│  ━━━━━━━━ Replication ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                                       │
+│  ☐ Use synchronous replication                                        │
+│    Switch to a regional disk, which is a single disk with storage     │
+│    replicas in two zones. Enables zero RPO (no data loss) and VM      │
+│    attachment in two zones. Learn more ↗                               │
+│                                                                       │
+│  ☐ Use asynchronous replication                                       │
+│    Replicate data from one disk to a secondary disk in another        │
+│    region for cross-region disaster recovery. Learn more ↗             │
+│                                                                       │
+│  ☐ Exclude boot disk from data replication                            │
+│    Save costs by only replicating data in non-boot disks.             │
+│                                                                       │
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+### 8a. Backups
+
+Ada 3 pilihan backup saat create VM:
+
+#### Backup Plan
+
+Full VM backup menggunakan **Backup and DR Service** (layanan terpisah dari Compute Engine).
+
+| Aspek | Detail |
+|-------|--------|
+| **Apa yang di-backup** | Seluruh VM (semua disk + metadata) |
+| **Tipe backup** | **Immutable** — tidak bisa dihapus/dimodifikasi sebelum retention period habis |
+| **Perlindungan** | Tersimpan di **Backup Vault** — terlindungi dari accidental/malicious deletion |
+| **Managed oleh** | Backup and DR Service (sertifikasi independen) |
+
+| Kelebihan | Kekurangan |
+|-----------|------------|
+| Full VM recovery (disk + config) | Biaya lebih tinggi dari snapshot |
+| Immutable — ransomware-proof | Butuh setup Backup and DR Service |
+| Backup vault protection | Lebih lambat dari snapshot |
+| Independent certifications (compliance) | Overkill untuk dev/testing |
+
+**Kapan pakai:**
+- Production VMs yang critical
+- Compliance requirement (immutable backup)
+- Butuh full VM recovery (bukan hanya disk)
+
+#### Snapshot Schedules
+
+Backup **disk saja** secara otomatis dengan jadwal yang ditentukan.
+
+| Aspek | Detail |
+|-------|--------|
+| **Apa yang di-backup** | Disk saja (bukan full VM) |
+| **Tipe** | Incremental — hanya perubahan yang disimpan |
+| **Biaya** | Lebih murah dari Backup Plan |
+| **Dropdown** | Pilih schedule yang sudah ada atau buat baru |
+
+| Kelebihan | Kekurangan |
+|-----------|------------|
+| Biaya rendah (incremental) | Hanya disk, bukan full VM |
+| Bisa pilih schedule yang sudah ada | Tidak immutable (bisa dihapus) |
+| Foundational protection | Recovery lebih manual |
+| Cepat dan ringan | — |
+
+**Info schedule:**
+```
+default-schedule-1:
+  Frequency: Every day
+  Start time: between 6:00 AM and 7:00 AM
+  Storage location: us (United States)
+
+  ⚠ Perhatikan storage location!
+  Jika VM di asia-southeast2 (Jakarta), pertimbangkan
+  buat schedule baru dengan location: asia
+  untuk latency dan compliance yang lebih baik.
+```
+
+**Kapan pakai:**
+- Sebagian besar production VMs
+- Budget-conscious tapi tetap butuh backup
+- Disk data yang penting
+
+#### No Backups
+
+| Kelebihan | Kekurangan |
+|-----------|------------|
+| Tidak ada biaya backup | Data hilang = hilang selamanya |
+| Tidak perlu setup | Tidak ada recovery option |
+
+**Kapan pakai:**
+- Dev/testing VMs (data tidak penting)
+- Stateless VMs (data di Cloud SQL/Cloud Storage)
+- Ephemeral workloads (batch processing)
+
+### Perbandingan 3 Opsi Backup
+
+```
+┌──────────────────┬──────────────────┬──────────────────┬──────────────────┐
+│                  │  Backup Plan     │  Snapshot         │  No Backups      │
+│                  │                  │  Schedules        │                  │
+├──────────────────┼──────────────────┼──────────────────┼──────────────────┤
+│ Yang di-backup   │ Full VM          │ Disk saja         │ Tidak ada        │
+│ Immutable        │ ✅ Ya            │ ❌ Tidak          │ —                │
+│ Biaya            │ $$$ Tinggi       │ $ Rendah          │ Gratis           │
+│ Recovery         │ Full VM restore  │ Disk restore      │ Tidak bisa       │
+│ Compliance       │ ✅ Sertifikasi   │ ⚠ Basic          │ ❌               │
+│ Cocok untuk      │ Critical prod    │ General prod      │ Dev/stateless    │
+└──────────────────┴──────────────────┴──────────────────┴──────────────────┘
+```
+
+### 8b. Replication
+
+Opsi untuk mereplikasi disk ke zone/region lain untuk **disaster recovery**.
+
+#### Use Synchronous Replication
+
+Mengubah disk menjadi **regional disk** — satu disk dengan replika di **2 zones** dalam region yang sama.
+
+| Aspek | Detail |
+|-------|--------|
+| **Cara kerja** | Write ke disk → otomatis di-replicate ke zone kedua secara sinkron |
+| **RPO** | **Zero** (Recovery Point Objective = 0, tidak ada data loss) |
+| **Disk type** | Berubah menjadi **regional persistent disk** |
+| **VM attachment** | Bisa di-attach ke VM di kedua zones |
+
+| Kelebihan | Kekurangan |
+|-----------|------------|
+| Zero data loss (RPO = 0) | Biaya 2x lipat (replika di 2 zones) |
+| Failover cepat ke zone lain | Hanya dalam 1 region (bukan cross-region) |
+| VM bisa attach dari 2 zones | Write latency sedikit lebih tinggi |
+| Otomatis — tidak perlu manage | Tidak semua disk type support |
+
+```
+Synchronous Replication Flow:
+
+  VM (zone-a)                    VM (zone-b) ← standby/failover
+       │                              │
+       ▼                              ▼
+  ┌──────────┐    sync write    ┌──────────┐
+  │  Disk    │ ═══════════════► │  Replica │
+  │  (zone-a)│ ◄═══════════════ │  (zone-b)│
+  └──────────┘                  └──────────┘
+       │                              │
+       └──── Regional Persistent Disk ┘
+              (1 disk, 2 zones)
+
+  Zone-a failure?
+  → VM di zone-b bisa langsung attach disk ✅
+  → Zero data loss ✅
+```
+
+**Kapan pakai:**
+- Database disk (zero data loss critical)
+- Production apps yang butuh zone-level HA
+- Stateful workloads
+
+#### Use Asynchronous Replication
+
+Mereplikasi disk ke **region lain** untuk cross-region disaster recovery.
+
+| Aspek | Detail |
+|-------|--------|
+| **Cara kerja** | Write ke disk → replicate ke secondary disk di region lain secara async |
+| **RPO** | > 0 (ada sedikit delay, biasanya detik–menit) |
+| **Target** | Secondary disk di **region berbeda** |
+| **Use case** | Cross-region DR (bukan hanya cross-zone) |
+
+| Kelebihan | Kekurangan |
+|-----------|------------|
+| Cross-region disaster recovery | RPO > 0 (beberapa detik data bisa hilang) |
+| Proteksi dari regional failure | Biaya tinggi (cross-region transfer + storage) |
+| Manual failover ke region lain | Setup lebih kompleks |
+| Compliance (geo-redundancy) | Latency replication tergantung jarak region |
+
+```
+Asynchronous Replication Flow:
+
+  VM (asia-southeast2)              Standby (us-central1)
+       │                                  │
+       ▼                                  ▼
+  ┌──────────┐    async replicate   ┌──────────┐
+  │  Primary │ ─ ─ ─ ─ ─ ─ ─ ─ ─ ► │ Secondary│
+  │  Disk    │                      │  Disk    │
+  │  (Jakarta)│                     │  (Iowa)  │
+  └──────────┘                      └──────────┘
+
+  Seluruh region Jakarta down?
+  → Failover ke us-central1
+  → Beberapa detik data mungkin hilang (RPO > 0)
+  → Tapi VM bisa running di region lain ✅
+```
+
+**Kapan pakai:**
+- Mission-critical apps yang butuh cross-region DR
+- Compliance requirement (data harus ada di 2 region)
+- Apps yang tidak boleh down meskipun seluruh region mati
+
+#### Exclude Boot Disk from Data Replication
+
+| Aspek | Detail |
+|-------|--------|
+| **Fungsi** | Hanya replicate **data disks**, skip boot disk |
+| **Alasan** | Boot disk bisa di-recreate dari image, tidak perlu replicate |
+| **Hemat** | Mengurangi biaya replication (boot disk biasanya 10-50 GB) |
+
+| Kelebihan | Kekurangan |
+|-----------|------------|
+| Hemat biaya replication | Boot disk tidak ter-replicate |
+| Boot disk bisa recreate dari image | Recovery sedikit lebih lama (harus buat VM baru) |
+| Data disk yang penting tetap aman | — |
+
+**Rekomendasi:** Centang jika boot disk kamu standar (OS image biasa) dan data ada di disk terpisah.
+
+### Perbandingan Synchronous vs Asynchronous
+
+```
+┌──────────────────┬──────────────────────┬──────────────────────┐
+│                  │  Synchronous         │  Asynchronous        │
+├──────────────────┼──────────────────────┼──────────────────────┤
+│ Scope            │ Cross-zone (1 region)│ Cross-region         │
+│ RPO              │ 0 (zero data loss)   │ > 0 (detik–menit)   │
+│ Latency impact   │ Sedikit              │ Minimal (async)      │
+│ Biaya            │ 2x disk cost         │ Disk + network egress│
+│ Failover         │ Fast (same region)   │ Manual (diff region) │
+│ Proteksi dari    │ Zone failure         │ Region failure       │
+│ Cocok untuk      │ Database, stateful   │ Mission-critical DR  │
+└──────────────────┴──────────────────────┴──────────────────────┘
+```
+
+### Flow Rekomendasi Data Protection
+
+```
+Apakah VM ini production/critical?
+│
+├── TIDAK (dev/testing/stateless)
+│   └── No backups ✅
+│       └── Data di Cloud SQL/Storage? → aman, tidak perlu backup VM
+│
+├── YA, production biasa
+│   └── Snapshot schedules ✅
+│       └── Buat schedule dengan location sesuai region VM
+│       └── Tambah synchronous replication jika butuh zone HA
+│
+├── YA, critical + compliance
+│   └── Backup plan ✅
+│       └── Immutable backup di Backup Vault
+│       └── Tambah synchronous replication
+│       └── Pertimbangkan asynchronous replication untuk cross-region DR
+│
+└── YA, mission-critical (tidak boleh down)
+    └── Backup plan + Synchronous + Asynchronous ✅
+        └── Full protection: backup + zone HA + cross-region DR
+        └── Exclude boot disk jika pakai standard OS image
+```
+
+---
+
+## 9. Security
+
+> **Console:** Create an instance → sidebar **Security**
+
+Section "Security" di sidebar wizard Create VM menggabungkan semua setting keamanan VM: identity, confidential computing, shielded VM, dan SSH access.
+
+### Console: Halaman Security
+
+```
+┌───────────────────────────────────────────────────────────────────────┐
+│  Security                                                             │
+│                                                                       │
+│  ━━━━━━━━ Identity and API access ⓘ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                                       │
+│  Service accounts ⓘ                                                   │
+│  ┌─ Service account ──────────────────────────────────────────────┐   │
+│  │ Compute Engine default service account                       ▼│   │
+│  └────────────────────────────────────────────────────────────────┘   │
+│  ⓘ To access instances with this service account you need to add     │
+│    the Service Account User role: roles/iam.serviceAccountUser.       │
+│    Learn more ↗                                                       │
+│                                                                       │
+│  Access scopes ⓘ                                                      │
+│  ● Allow default access                                               │
+│  ○ Allow full access to all Cloud APIs                                │
+│  ○ Set access for each API                                            │
+│                                                                       │
+│  ━━━━━━━━ Confidential VM service ⓘ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                                       │
+│  ◉ Confidential Computing is disabled on this VM instance             │
+│                                                                       │
+│  [Enable]                                                             │
+│                                                                       │
+│  ━━━━━━━━ Shielded VM ⓘ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│  Turn on all settings for the most secure configuration.              │
+│                                                                       │
+│  ☐ Turn on Secure Boot ⓘ                                             │
+│  ☑ Turn on vTPM ⓘ                                                    │
+│  ☑ Turn on Integrity Monitoring ⓘ                                    │
+│                                                                       │
+│  ━━━━━━━━ VM access ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│  Manage how users connect to the VM                                   │
+│                                                                       │
+│  ┌────────────────────────────────────────────────────────────────┐   │
+│  │ ✅ By default, when you connect to a VM using this console    │   │
+│  │    or gcloud, your SSH keys are generated automatically.       │   │
+│  │    Learn more ↗                                                │   │
+│  └────────────────────────────────────────────────────────────────┘   │
+│                                                                       │
+│  ▽ Manage access                                                      │
+│                                                                       │
+├───────────────────────────────────────────────────────────────────────┤
+│  [Create]  Cancel  ☐ Equivalent code                                  │
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 9a. Identity and API Access
+
+#### Service Accounts
+
+Menentukan **service account** yang digunakan VM untuk mengakses GCP APIs.
+
+```
+  Service account dropdown:
+  ┌────────────────────────────────────────────────────────────┐
+  │ Compute Engine default service account                   ▼│
+  ├────────────────────────────────────────────────────────────┤
+  │ Compute Engine default service account                     │ ← default
+  │ my-custom-sa@project.iam.gserviceaccount.com               │ ← custom SA
+  │ No service account                                         │ ← tanpa SA
+  └────────────────────────────────────────────────────────────┘
+```
 
 | Opsi | Kelebihan | Kekurangan |
 |------|-----------|------------|
-| **Default compute SA** | Otomatis ada, tidak perlu setup | Permission terlalu luas (editor) |
+| **Compute Engine default service account** | Otomatis ada, tidak perlu setup | Permission terlalu luas (Project Editor), risiko keamanan |
 | **Custom service account** | Least privilege, lebih aman | Harus buat dan manage sendiri |
 | **No service account** | VM tidak bisa akses GCP API | Aman, tapi sangat terbatas |
+
+**Info penting dari Console:**
+```
+⚠ "To access instances with this service account you need to add
+   the Service Account User role: roles/iam.serviceAccountUser."
+
+  Artinya: User yang ingin SSH ke VM yang menggunakan service account,
+  harus punya role `roles/iam.serviceAccountUser` pada SA tersebut.
+
+  Tanpa role ini → error saat mencoba connect ke VM.
+```
 
 **Best practice:** Selalu buat custom service account dengan permission minimum.
 
@@ -469,19 +859,274 @@ gcloud compute instances create my-vm \
     --scopes=cloud-platform
 ```
 
-### Access Scopes
+#### Access Scopes
 
-| Scope | Keterangan |
-|-------|------------|
-| **Allow default access** | Akses read ke storage, write ke logging/monitoring |
-| **Allow full access** | Full API access (permission tergantung SA IAM roles) |
-| **Set access for each API** | Granular per API (tapi IAM roles lebih recommended) |
+**Access scopes** membatasi API mana yang bisa diakses VM — sebagai **filter tambahan** di atas IAM roles.
 
-**Rekomendasi:** Pilih "Allow full access to all Cloud APIs", lalu batasi lewat **IAM roles** di service account. Lebih mudah di-manage.
+```
+  Access scopes:
+  ● Allow default access         ← read storage, write logging/monitoring
+  ○ Allow full access to all Cloud APIs  ← semua API (batasi via IAM)
+  ○ Set access for each API      ← pilih per API (granular)
+```
+
+| Scope | Apa yang diizinkan | Kapan pakai |
+|-------|-------------------|-------------|
+| **Allow default access** | Read Cloud Storage, write Logging & Monitoring, read-only Compute | VM yang hanya butuh basic access |
+| **Allow full access to all Cloud APIs** | Semua GCP API (actual permission tetap dibatasi IAM roles SA) | **Recommended** — kontrol penuh via IAM |
+| **Set access for each API** | Pilih per API: Compute, Storage, BigQuery, dll | Jarang dipakai — IAM roles lebih fleksibel |
+
+```
+Bagaimana Access Scopes bekerja:
+
+  Request dari VM ke GCP API
+       │
+       ▼
+  ┌──────────────┐     ┌──────────────┐
+  │  Access Scope│────►│  IAM Role    │────► ✅ Allowed
+  │  (filter 1)  │     │  (filter 2)  │      ATAU
+  └──────────────┘     └──────────────┘      ❌ Denied
+
+  Kedua filter harus pass!
+
+  Contoh:
+  Scope = "Allow default access" (read-only storage)
+  IAM Role SA = roles/storage.admin (read + write)
+  Result = Read ONLY (scope membatasi ke read)
+
+  Scope = "Allow full access" (semua API)
+  IAM Role SA = roles/storage.objectViewer (read-only)
+  Result = Read ONLY (IAM membatasi ke read)
+
+  Rekomendasi: Set scope ke "full access", kontrol via IAM saja ✅
+```
+
+**Rekomendasi:** Pilih **"Allow full access to all Cloud APIs"**, lalu batasi lewat **IAM roles** di service account. Lebih mudah di-manage dan lebih fleksibel.
 
 ---
 
-## 9. Firewall
+### 9b. Confidential VM Service
+
+> Juga dijelaskan di [Section 5](#5-confidential-vm).
+
+```
+  Confidential VM service ⓘ
+  ┌────────────────────────────────────────────────────────────────┐
+  │ ◉ Confidential Computing is disabled on this VM instance      │
+  └────────────────────────────────────────────────────────────────┘
+  [Enable]
+```
+
+| Opsi | Keterangan |
+|------|------------|
+| **Disabled** (default) | Tidak ada enkripsi RAM — standar cloud computing |
+| **[Enable]** | Mengaktifkan Confidential Computing — RAM terenkripsi via AMD SEV/TDX |
+
+**Saat klik [Enable]:**
+```
+  ⚠ Persyaratan:
+  ├── Machine type berubah ke N2D (AMD) — wajib AMD SEV support
+  ├── OS image harus support Confidential VM
+  ├── Biaya sedikit lebih tinggi (~5%)
+  └── Performance hit ~5% (overhead enkripsi RAM)
+```
+
+| Kelebihan | Kekurangan |
+|-----------|------------|
+| Data di RAM terenkripsi | Performance hit ~5% |
+| Proteksi dari cloud provider | Hanya N2D series (AMD) |
+| Compliance (HIPAA, PCI-DSS) | Sedikit lebih mahal |
+| Defense-in-depth | Tidak semua OS support |
+
+**Rekomendasi:** Biarkan disabled kecuali ada compliance requirement.
+
+---
+
+### 9c. Shielded VM
+
+```
+  Shielded VM ⓘ
+  Turn on all settings for the most secure configuration.
+
+  ☐ Turn on Secure Boot ⓘ
+  ☑ Turn on vTPM ⓘ
+  ☑ Turn on Integrity Monitoring ⓘ
+```
+
+| Checkbox | Default | Fungsi | Detail |
+|----------|---------|--------|--------|
+| **Turn on Secure Boot** | ☐ Off | Hanya boot software yang ter-sign (verified) | Mencegah rootkit dan bootkit — pastikan OS image support |
+| **Turn on vTPM** | ☑ On | Virtual Trusted Platform Module | Menyimpan keys/secrets secara aman, memverifikasi boot integrity |
+| **Turn on Integrity Monitoring** | ☑ On | Monitor apakah boot sequence berubah | Alert jika boot components dimodifikasi (tanda tampering) |
+
+| Kelebihan | Kekurangan |
+|-----------|------------|
+| Proteksi dari rootkit dan bootkit | Secure Boot bisa block driver custom/unsigned |
+| Compliance requirement (PCI, HIPAA) | Sedikit lebih lambat boot |
+| Integrity alert jika ada perubahan | Beberapa OS custom tidak support Secure Boot |
+| vTPM untuk key storage aman | — |
+
+```
+Shielded VM Protection Flow:
+
+  VM Boot
+    │
+    ▼
+  ┌──────────────┐   Secure Boot ON?
+  │ UEFI Boot    │──── Ya → Verifikasi signature semua boot components
+  └──────────────┘         │
+                           ├── Valid → Lanjut boot ✅
+                           └── Invalid → Boot GAGAL ❌ (rootkit blocked)
+    │
+    ▼
+  ┌──────────────┐   vTPM ON?
+  │ Boot         │──── Ya → Simpan measurement boot sequence ke vTPM
+  │ Components   │         → Bisa diaudit nanti
+  └──────────────┘
+    │
+    ▼
+  ┌──────────────┐   Integrity Monitoring ON?
+  │ OS Running   │──── Ya → Bandingkan boot measurement dengan baseline
+  └──────────────┘         │
+                           ├── Match → VM integrity OK ✅
+                           └── Mismatch → Alert! Boot tampering detected ⚠
+```
+
+**Rekomendasi:**
+- **vTPM** dan **Integrity Monitoring** → biarkan **On** (default) ✅
+- **Secure Boot** → aktifkan jika pakai standard OS image (Debian, Ubuntu, Windows). Jangan aktifkan jika pakai custom kernel atau unsigned drivers.
+
+---
+
+### 9d. VM Access
+
+```
+  VM access
+  Manage how users connect to the VM
+
+  ┌────────────────────────────────────────────────────────────────┐
+  │ ✅ By default, when you connect to a VM using this console    │
+  │    or gcloud, your SSH keys are generated automatically.       │
+  │    Learn more ↗                                                │
+  └────────────────────────────────────────────────────────────────┘
+
+  ▽ Manage access
+```
+
+**Penjelasan:** Secara default, saat kamu klik **SSH** di Console atau pakai `gcloud compute ssh`, GCP **otomatis generate SSH key pair** dan inject public key ke VM. Kamu tidak perlu manage SSH keys secara manual.
+
+#### Manage Access (Expandable)
+
+Klik **"Manage access"** untuk expand opsi tambahan:
+
+```
+  ▽ Manage access
+
+  ┌────────────────────────────────────────────────────────────────┐
+  │                                                                │
+  │  Control VM access through IAM permissions                     │
+  │  ☐ Enable OS Login                                             │
+  │                                                                │
+  │  ── OR ──                                                      │
+  │                                                                │
+  │  Add manually generated SSH keys                               │
+  │                                                                │
+  │  SSH Keys                                                      │
+  │  ☐ Block project-wide SSH keys                                 │
+  │                                                                │
+  │  [+ ADD ITEM]                                                  │
+  │                                                                │
+  └────────────────────────────────────────────────────────────────┘
+```
+
+#### OS Login
+
+| Opsi | Keterangan |
+|------|------------|
+| **☐ Enable OS Login** (off) | SSH keys dikelola secara tradisional (metadata SSH keys) |
+| **☑ Enable OS Login** (on) | SSH access dikelola via **IAM roles** — tidak perlu manage SSH keys |
+
+| | OS Login OFF (default) | OS Login ON |
+|---|---|---|
+| **SSH key management** | Manual — metadata SSH keys | Otomatis via IAM |
+| **User identity** | Berdasarkan SSH key | Berdasarkan Google account |
+| **Access control** | Siapapun yang punya key | Hanya user dengan IAM role `roles/compute.osLogin` |
+| **2FA support** | Tidak | Ya (jika diaktifkan) |
+| **Audit** | Sulit track siapa login | Google Cloud Audit Log |
+| **Best practice** | Dev/testing | **Production** ✅ |
+
+**OS Login Roles:**
+
+| Role | Akses |
+|------|-------|
+| `roles/compute.osLogin` | SSH sebagai user biasa (non-root) |
+| `roles/compute.osAdminLogin` | SSH sebagai root/sudo |
+
+```
+OS Login Flow:
+
+  User: gcloud compute ssh my-vm
+       │
+       ├── OS Login OFF:
+       │   │  Cek metadata SSH keys
+       │   │  Key match? → Login ✅
+       │   └── Key tidak match? → Denied ❌
+       │
+       └── OS Login ON:
+           │  Cek IAM: punya roles/compute.osLogin?
+           │  Ya → Login ✅ (menggunakan Google identity)
+           └── Tidak → Denied ❌
+```
+
+#### SSH Keys (Manual)
+
+Jika OS Login **OFF**, kamu bisa manage SSH keys:
+
+| Opsi | Fungsi |
+|------|--------|
+| **Block project-wide SSH keys** | Jangan izinkan SSH keys dari project metadata — hanya keys yang di-add spesifik ke VM ini |
+| **[+ ADD ITEM]** | Tambah SSH public key secara manual untuk user tertentu |
+
+```
+  [+ ADD ITEM] → paste SSH public key:
+
+  ┌────────────────────────────────────────────────────────────────┐
+  │ ssh-rsa AAAAB3NzaC1yc2EAAAA... user@example.com               │
+  └────────────────────────────────────────────────────────────────┘
+```
+
+| Setting | Kelebihan | Kekurangan |
+|---------|-----------|------------|
+| **Project-wide SSH keys** (default) | Satu set keys berlaku untuk semua VM | Kurang granular — semua VM bisa diakses |
+| **Block project-wide + add per-VM** | Granular — setiap VM punya keys sendiri | Lebih ribet manage |
+| **OS Login (recommended)** | IAM-based, audit trail, 2FA | Perlu setup IAM roles |
+
+#### Perbandingan Metode SSH Access
+
+```
+┌───────────────────┬──────────────────┬──────────────────┬──────────────────┐
+│                   │  Auto SSH Keys   │  Manual SSH Keys │  OS Login        │
+│                   │  (default)       │                  │                  │
+├───────────────────┼──────────────────┼──────────────────┼──────────────────┤
+│ Setup             │ Tidak perlu      │ Generate & paste │ Enable + IAM     │
+│ Key management    │ Otomatis         │ Manual           │ Via IAM          │
+│ Security          │ ⚠ Medium        │ ⚠ Medium        │ ✅ Tinggi        │
+│ Audit trail       │ Basic            │ Basic            │ ✅ Full (Audit   │
+│                   │                  │                  │    Log)          │
+│ 2FA               │ ❌               │ ❌               │ ✅ Optional      │
+│ Cocok untuk       │ Dev/testing      │ Legacy/specific  │ Production ✅    │
+│                   │                  │ user access      │                  │
+└───────────────────┴──────────────────┴──────────────────┴──────────────────┘
+```
+
+**Rekomendasi:**
+- **Dev/testing** → biarkan default (auto SSH keys) — paling mudah
+- **Production** → aktifkan **OS Login** untuk centralized access control via IAM
+- Jika harus manual → centang **"Block project-wide SSH keys"** dan add keys per-VM untuk granular control
+
+---
+
+## 10. Firewall
 
 Opsi cepat untuk allow traffic HTTP/HTTPS.
 
@@ -497,7 +1142,7 @@ Opsi cepat untuk allow traffic HTTP/HTTPS.
 
 ---
 
-## 10. Advanced: Networking
+## 11. Advanced: Networking
 
 ### Network Interface
 
@@ -552,7 +1197,7 @@ gcloud compute firewall-rules create allow-lb \
 
 ---
 
-## 11. Advanced: Disks
+## 12. Advanced: Disks
 
 ### Additional Disk
 
@@ -582,7 +1227,9 @@ Bisa attach disk tambahan selain boot disk.
 
 ---
 
-## 12. Advanced: Security (Shielded VM)
+## 13. Advanced: Security (Shielded VM)
+
+> **Note:** Di Console, Shielded VM ada di sidebar **Security**. Lihat [Section 9c. Shielded VM](#9c-shielded-vm) untuk penjelasan lengkap beserta layout Console dan flow diagram.
 
 | Fitur | Default | Keterangan |
 |-------|---------|------------|
@@ -590,78 +1237,511 @@ Bisa attach disk tambahan selain boot disk.
 | **vTPM** | On | Virtual Trusted Platform Module untuk integritas |
 | **Integrity Monitoring** | On | Cek apakah boot sequence berubah |
 
-| Kelebihan | Kekurangan |
-|-----------|------------|
-| Proteksi dari rootkit dan bootkit | Secure Boot bisa block driver custom |
-| Compliance requirement (PCI, HIPAA) | Sedikit lebih lambat boot |
-| Integrity monitoring bisa alert | Beberapa OS custom tidak support |
-
 **Rekomendasi:** Biarkan vTPM dan Integrity Monitoring **On**. Aktifkan Secure Boot kalau pakai standard OS image.
 
 ---
 
-## 13. Advanced: Management
+## 14. Advanced
 
-### Metadata
+> **Console:** Create an instance → sidebar **Advanced**
 
-Key-value pairs yang bisa dibaca oleh VM.
+Section "Advanced" menggabungkan setting tambahan: tags, description, deletion protection, reservations, automation, metadata, data encryption, dan sole-tenancy.
 
-```bash
-# Contoh: startup script via metadata
---metadata=startup-script='#!/bin/bash
-apt-get update && apt-get install -y nginx'
-
-# Contoh: custom metadata
---metadata=env=production,app=ftlgym
-```
-
-### Availability Policy
-
-| Setting | Pilihan | Keterangan |
-|---------|---------|------------|
-| **On host maintenance** | **Migrate** (default) | VM pindah ke host lain tanpa downtime saat maintenance |
-| | **Terminate** | VM dimatikan saat host maintenance |
-| **Automatic restart** | **On** (default) | VM otomatis restart kalau crash/maintenance |
-| | **Off** | VM tidak otomatis restart |
+### Console: Halaman Advanced
 
 ```
-╔═══════════════════╦══════════════════════════════════════════╗
-║  On Host          ║                                         ║
-║  Maintenance      ║  Detail                                 ║
-╠═══════════════════╬══════════════════════════════════════════╣
-║                   ║  + Tidak ada downtime                    ║
-║  Migrate          ║  + VM tetap running                      ║
-║  (default)        ║  - Sedikit performance dip saat migrasi  ║
-║                   ║  - Tidak tersedia untuk Spot VM           ║
-╠═══════════════════╬══════════════════════════════════════════╣
-║                   ║  + Tidak ada performance dip              ║
-║  Terminate        ║  - VM mati, harus start lagi              ║
-║                   ║  - Downtime saat maintenance               ║
-║                   ║  + Wajib untuk Spot VM                    ║
-╚═══════════════════╩══════════════════════════════════════════╝
+┌───────────────────────────────────────────────────────────────────────┐
+│  Advanced                                                             │
+│                                                                       │
+│  ▽ Manage tags and labels                                             │
+│                                                                       │
+│  ┌────────────────────────────────────────────────────────────────┐   │
+│  │ Description                                                    │   │
+│  │                                                                │   │
+│  └────────────────────────────────────────────────────────────────┘   │
+│                                                                       │
+│  ━━━━━━━━ Deletion protection ⓘ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│  ☐ Enable deletion protection                                        │
+│                                                                       │
+│  ━━━━━━━━ Reservations ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│  ● Use automatic selection                                            │
+│    Google Cloud will select an existing reservation that matches      │
+│    properties of your instance                                        │
+│  ○ Choose a reservation                                               │
+│  ○ Don't use a reservation                                            │
+│                                                                       │
+│  ━━━━━━━━ Automation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│  ┌────────────────────────────────────────────────────────────────┐   │
+│  │ Startup script                                                 │   │
+│  │                                                                │   │
+│  └────────────────────────────────────────────────────────────────┘   │
+│  You can choose to specify a startup script that will run when your   │
+│  instance boots up or restarts. Startup scripts can be used to        │
+│  install software and updates, and to ensure that services are        │
+│  running within the virtual machine. Learn more ↗                     │
+│                                                                       │
+│  ━━━━━━━━ Metadata ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│  You can set custom metadata for an instance or project outside of    │
+│  the server-defined metadata. This is useful for passing in arbitrary │
+│  values to your project or instance that can be queried by your code  │
+│  on the instance. Learn more ↗                                        │
+│                                                                       │
+│  [+ Add item]                                                         │
+│                                                                       │
+│  ━━━━━━━━ Data encryption ⓘ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│  ● Google-managed encryption key                                      │
+│    Keys owned by Google                                               │
+│  ○ Cloud KMS key                                                      │
+│    Keys owned by customers                                            │
+│                                                                       │
+│  ┌────────────────────────────────────────────────────────────────┐   │
+│  │ ⓘ You can now automate creation of Cloud KMS keys using       │   │
+│  │   Autokey.  [Dismiss]  [Learn more ↗]                         │   │
+│  └────────────────────────────────────────────────────────────────┘   │
+│                                                                       │
+│  Customer Managed Encryption Key (CMEK) revocation policy             │
+│  You can configure this VM to shut down when the key associated       │
+│  with any attached disk is revoked. Learn more ↗                      │
+│  ○ Shut down (recommended)                                            │
+│  ● Do nothing                                                         │
+│                                                                       │
+│  ━━━━━━━━ Sole-tenancy ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│  ┌────────────────────────────────────────────────────────────────┐   │
+│  │ ⓘ Selected machine type is not compatible with Sole-tenancy.  │   │
+│  └────────────────────────────────────────────────────────────────┘   │
+│                                                                       │
+├───────────────────────────────────────────────────────────────────────┤
+│  [Create]  Cancel  ☐ Equivalent code                                  │
+└───────────────────────────────────────────────────────────────────────┘
 ```
-
-**Rekomendasi:** **Migrate + Automatic restart On** untuk semua production VM.
-
-### Preemptibility (lama, sekarang → Provisioning Model)
-
-Setting lama. Sekarang diganti dengan Provisioning Model (Standard/Spot) di section 4.
 
 ---
 
-## 14. Advanced: Sole Tenancy
+### 14a. Manage Tags and Labels
 
-VM berjalan di hardware yang **tidak dibagi** dengan tenant/customer lain.
+Klik **"Manage tags and labels"** untuk expand:
+
+```
+  ▽ Manage tags and labels
+
+  Tags
+  ┌────────────────────────────────────────────────────────────────┐
+  │ (Tag bindings — untuk Organization Policy)                      │
+  └────────────────────────────────────────────────────────────────┘
+
+  Labels
+  ┌──────────────────┐  ┌──────────────────┐
+  │ Key              │  │ Value            │
+  ├──────────────────┤  ├──────────────────┤
+  │ env              │  │ production       │
+  │ team             │  │ devops           │
+  │ app              │  │ ftlgym           │
+  └──────────────────┘  └──────────────────┘
+  [+ Add label]
+```
+
+| Item | Fungsi | Contoh |
+|------|--------|--------|
+| **Tags** | Tag bindings untuk Organization Policy enforcement | Digunakan oleh admin untuk policy control |
+| **Labels** | Key-value metadata untuk organisasi dan billing | `env=production`, `team=devops`, `app=ftlgym` |
+
+**Labels use cases:**
+- **Billing filter** — lihat biaya per label di Billing Console
+- **Inventory** — filter VM berdasarkan label di Console
+- **Automation** — script yang target VM berdasarkan label
+
+```bash
+# gcloud: buat VM dengan labels
+gcloud compute instances create my-vm \
+    --labels=env=prod,team=devops,app=ftlgym
+
+# Filter VM berdasarkan label
+gcloud compute instances list --filter="labels.env=prod"
+```
+
+**Rekomendasi:** Selalu tambahkan minimal labels `env`, `team`, dan `app` untuk setiap VM.
+
+---
+
+### 14b. Description
+
+```
+  ┌────────────────────────────────────────────────────────────────┐
+  │ Description                                                    │
+  │                                                                │
+  │ Production web server for ftlgym application.                  │
+  │ Serves API and frontend behind Load Balancer.                  │
+  └────────────────────────────────────────────────────────────────┘
+```
+
+| Aspek | Detail |
+|-------|--------|
+| **Fungsi** | Catatan deskriptif tentang VM — terlihat di Console dan `gcloud describe` |
+| **Optional** | Tidak wajib, tapi sangat recommended |
+| **Max length** | 2048 karakter |
+
+**Rekomendasi:** Isi singkat — apa fungsi VM, siapa owner, dan catatan penting. Membantu tim lain memahami fungsi VM tanpa harus bertanya.
+
+---
+
+### 14c. Deletion Protection
+
+```
+  Deletion protection ⓘ
+  ☐ Enable deletion protection
+```
+
+| Opsi | Keterangan |
+|------|------------|
+| **☐ Off** (default) | VM bisa dihapus kapan saja |
+| **☑ On** | VM **tidak bisa dihapus** sampai deletion protection di-disable dulu |
 
 | Kelebihan | Kekurangan |
 |-----------|------------|
-| Dedicated hardware | Sangat mahal (bayar seluruh host) |
-| Compliance requirement | Overkill untuk kebanyakan use case |
-| Performa lebih predictable | Setup lebih kompleks |
+| Mencegah accidental delete | Harus disable dulu sebelum bisa delete |
+| Proteksi dari human error | Bisa menghambat automation jika lupa |
+| Safety net untuk production VM | — |
 
-**Kapan pakai:** Licensing BYOL (Oracle), compliance ketat, isolasi hardware.
+```
+Deletion Protection Flow:
 
-**Rekomendasi:** Hampir tidak pernah dibutuhkan kecuali ada requirement spesifik.
+  User: gcloud compute instances delete my-prod-vm
+       │
+       ├── Deletion protection OFF → VM dihapus ✅ (atau ❌ jika accidental!)
+       │
+       └── Deletion protection ON → ERROR ❌
+           "The resource 'my-prod-vm' is protected against deletion"
+           │
+           └── Harus disable dulu:
+               gcloud compute instances update my-prod-vm \
+                   --no-deletion-protection
+               │
+               └── Baru bisa delete
+```
+
+**Rekomendasi:**
+- **Production VM** → ☑ **Enable** — mencegah delete tidak sengaja
+- **Dev/testing** → ☐ Off — tidak perlu
+
+---
+
+### 14d. Reservations
+
+```
+  Reservations
+  ● Use automatic selection
+    Google Cloud will select an existing reservation that matches
+    properties of your instance
+  ○ Choose a reservation
+  ○ Don't use a reservation
+```
+
+**Apa itu Reservation?**
+Reservation menjamin bahwa **capacity (resource)** tersedia saat kamu butuhkan. Dengan reservation, kamu "book" sejumlah vCPU dan RAM di zone tertentu — GCP menjamin resource tersebut available untukmu.
+
+| Opsi | Keterangan |
+|------|------------|
+| **Use automatic selection** (default) | GCP otomatis pakai reservation yang cocok (jika ada) |
+| **Choose a reservation** | Pilih reservation spesifik yang sudah dibuat |
+| **Don't use a reservation** | Jangan pakai reservation — gunakan on-demand capacity |
+
+| Kelebihan Reservation | Kekurangan |
+|----------------------|------------|
+| Jaminan resource available | Bayar meskipun tidak dipakai |
+| Tidak khawatir capacity shortage | Harus dibuat sebelumnya |
+| Cocok untuk production yang critical | Terikat pada zone dan machine type |
+
+```
+Kapan Perlu Reservation?
+
+  Apakah VM critical dan harus selalu bisa dibuat?
+  │
+  ├── TIDAK → Don't use a reservation (default on-demand)
+  │
+  ├── YA, sudah punya reservation
+  │   ├── Properties VM cocok → Use automatic selection ✅
+  │   └── Mau pilih specific → Choose a reservation
+  │
+  └── YA, belum punya → Buat reservation dulu di Compute Engine → Reservations
+```
+
+**Rekomendasi:** Biarkan **"Use automatic selection"** (default). Reservation hanya dibutuhkan jika sering mengalami capacity shortage di zone tertentu atau ada requirement SLA ketat.
+
+---
+
+### 14e. Automation (Startup Script)
+
+```
+  Automation
+  ┌────────────────────────────────────────────────────────────────┐
+  │ Startup script                                                 │
+  │                                                                │
+  │ #!/bin/bash                                                    │
+  │ apt-get update                                                 │
+  │ apt-get install -y nginx                                       │
+  │ systemctl enable nginx                                         │
+  │ systemctl start nginx                                          │
+  └────────────────────────────────────────────────────────────────┘
+  You can choose to specify a startup script that will run when your
+  instance boots up or restarts.
+```
+
+| Aspek | Detail |
+|-------|--------|
+| **Fungsi** | Script yang jalan otomatis setiap VM boot/restart |
+| **Format** | Bash script (Linux) atau PowerShell (Windows) |
+| **Kapan jalan** | Setiap boot — termasuk restart |
+| **Use case** | Install software, konfigurasi, pull code, start services |
+
+**Contoh Startup Scripts:**
+
+```bash
+# Install web server + deploy app
+#!/bin/bash
+apt-get update && apt-get install -y nginx git
+git clone https://github.com/myapp/repo.git /var/www/html
+systemctl restart nginx
+
+# Install monitoring agent
+#!/bin/bash
+curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
+sudo bash add-google-cloud-ops-agent-repo.sh --also-install
+
+# Pull config dari GCS
+#!/bin/bash
+gcloud storage cp gs://my-bucket/config/nginx.conf /etc/nginx/nginx.conf
+systemctl restart nginx
+```
+
+| Kelebihan | Kekurangan |
+|-----------|------------|
+| Otomatis setiap boot | Jalan ulang setiap restart (harus idempotent) |
+| Bagus untuk initial setup | Debug sulit — cek serial port output |
+| Infrastructure as Code | Max 256 KB per script |
+
+```bash
+# gcloud: buat VM dengan startup script
+gcloud compute instances create my-vm \
+    --metadata-from-file=startup-script=./setup.sh
+
+# Atau inline
+gcloud compute instances create my-vm \
+    --metadata=startup-script='#!/bin/bash
+apt-get update && apt-get install -y nginx'
+
+# Cek output startup script
+gcloud compute instances get-serial-port-output my-vm --zone=ZONE
+```
+
+**Rekomendasi:** Gunakan startup script untuk **initial provisioning**. Untuk konfigurasi complex, pertimbangkan **Cloud Init**, **Ansible**, atau **Packer** (custom image).
+
+---
+
+### 14f. Metadata
+
+```
+  Metadata
+  You can set custom metadata for an instance or project outside
+  of the server-defined metadata. This is useful for passing in
+  arbitrary values to your project or instance that can be queried
+  by your code on the instance. Learn more ↗
+
+  [+ Add item]
+
+  Klik [+ Add item]:
+  ┌──────────────────┐  ┌──────────────────────────────────────┐
+  │ Key              │  │ Value                                │
+  ├──────────────────┤  ├──────────────────────────────────────┤
+  │ env              │  │ production                           │
+  │ db-host          │  │ 10.0.1.5                             │
+  │ app-version      │  │ v2.3.1                               │
+  └──────────────────┘  └──────────────────────────────────────┘
+  [+ Add item]
+```
+
+| Aspek | Detail |
+|-------|--------|
+| **Fungsi** | Key-value pairs yang bisa dibaca dari dalam VM |
+| **Cara akses** | Query metadata server: `http://metadata.google.internal/computeMetadata/v1/` |
+| **Use case** | Pass configuration ke VM tanpa hardcode |
+
+```bash
+# Dari dalam VM — baca metadata
+curl -H "Metadata-Flavor: Google" \
+  http://metadata.google.internal/computeMetadata/v1/instance/attributes/env
+# Output: production
+
+curl -H "Metadata-Flavor: Google" \
+  http://metadata.google.internal/computeMetadata/v1/instance/attributes/db-host
+# Output: 10.0.1.5
+```
+
+**Metadata vs Labels:**
+
+| | Metadata | Labels |
+|---|---|---|
+| **Diakses dari** | Dalam VM (metadata server) | Luar VM (Console, gcloud, API) |
+| **Fungsi** | Configuration untuk app di VM | Organisasi dan billing |
+| **Contoh** | `db-host=10.0.1.5` | `env=production` |
+
+---
+
+### 14g. Data Encryption
+
+```
+  Data encryption ⓘ
+
+  ● Google-managed encryption key
+    Keys owned by Google
+
+  ○ Cloud KMS key
+    Keys owned by customers
+
+  ┌────────────────────────────────────────────────────────────────┐
+  │ ⓘ You can now automate creation of Cloud KMS keys using       │
+  │   Autokey.  [Dismiss]  [Learn more ↗]                         │
+  └────────────────────────────────────────────────────────────────┘
+```
+
+Menentukan **siapa yang mengelola encryption key** untuk disk VM.
+
+| Opsi | Key Owner | Kontrol | Biaya |
+|------|-----------|---------|-------|
+| **Google-managed encryption key** (default) | Google | Google manage sepenuhnya — kamu tidak perlu apa-apa | Gratis |
+| **Cloud KMS key** (CMEK) | Customer | Kamu buat dan manage key sendiri di Cloud KMS | Biaya KMS key |
+
+#### Google-managed Encryption Key
+
+```
+  Data di disk → dienkripsi oleh Google secara otomatis
+  │
+  ├── Key dibuat oleh Google
+  ├── Key di-rotate otomatis oleh Google
+  ├── Kamu tidak bisa lihat atau manage key
+  └── Semua data at-rest terenkripsi (AES-256)
+```
+
+| Kelebihan | Kekurangan |
+|-----------|------------|
+| Zero effort — otomatis | Tidak ada kontrol atas key |
+| Gratis | Tidak bisa revoke key |
+| Semua data terenkripsi by default | Tidak memenuhi CMEK compliance |
+
+#### Cloud KMS Key (CMEK)
+
+```
+  Pilih ○ Cloud KMS key:
+
+  ┌────────────────────────────────────────────────────────────────┐
+  │ Select a customer-managed key                                  │
+  │ ┌──────────────────────────────────────────────────────────┐   │
+  │ │ projects/my-project/locations/asia-southeast2/           │   │
+  │ │ keyRings/my-keyring/cryptoKeys/vm-disk-key             ▼│   │
+  │ └──────────────────────────────────────────────────────────┘   │
+  └────────────────────────────────────────────────────────────────┘
+```
+
+| Kelebihan | Kekurangan |
+|-----------|------------|
+| Full control atas key | Harus buat dan manage key di KMS |
+| Bisa revoke key → disk tidak bisa diakses | Biaya KMS key (~$0.06/bulan per key) |
+| Compliance (CMEK requirement) | Setup lebih kompleks |
+| Audit trail di Cloud Audit Logs | Key destroy = data hilang permanen |
+| Bisa pakai HSM key (FIPS 140-2 Level 3) | — |
+
+> Lihat [Cloud KMS documentation](../../Cloud-KMS/) untuk detail membuat key.
+
+#### CMEK Revocation Policy
+
+```
+  Customer Managed Encryption Key (CMEK) revocation policy
+  You can configure this VM to shut down when the key associated
+  with any attached disk is revoked. Learn more ↗
+
+  ○ Shut down (recommended)
+  ● Do nothing
+```
+
+Menentukan apa yang terjadi jika CMEK key di-**revoke** (disable/destroy):
+
+| Opsi | Apa yang terjadi | Kapan pakai |
+|------|-----------------|-------------|
+| **Shut down** (recommended) | VM otomatis **shutdown** jika key revoked | Production — data protection |
+| **Do nothing** (default) | VM tetap running, tapi disk **tidak bisa diakses** | Dev/testing atau legacy |
+
+```
+CMEK Revocation Flow:
+
+  Normal:
+  VM Running → disk encrypted with KMS key → data accessible ✅
+
+  Key revoked (disabled/destroyed):
+  │
+  ├── Policy: "Shut down"
+  │   └── VM otomatis SHUTDOWN
+  │       └── Aman — VM tidak running dengan disk unreadable
+  │
+  └── Policy: "Do nothing"
+      └── VM tetap running
+          └── Tapi disk I/O GAGAL → app crash, data corrupt risk ⚠
+```
+
+**Rekomendasi:**
+- Pakai **Google-managed** untuk kebanyakan use case (gratis, zero effort)
+- Pakai **Cloud KMS key** jika ada compliance requirement (CMEK)
+- Jika pakai CMEK → set revocation policy ke **"Shut down"**
+
+#### Autokey
+
+Info banner di Console:
+```
+  ⓘ You can now automate creation of Cloud KMS keys using Autokey.
+```
+
+**Autokey** adalah fitur baru yang otomatis membuat KMS key saat kamu memilih CMEK — tidak perlu buat key manual dulu di Cloud KMS.
+
+---
+
+### 14h. Sole-Tenancy
+
+```
+  Sole-tenancy
+  ┌────────────────────────────────────────────────────────────────┐
+  │ ⓘ Selected machine type is not compatible with Sole-tenancy.  │
+  └────────────────────────────────────────────────────────────────┘
+```
+
+VM berjalan di hardware yang **tidak dibagi** dengan tenant/customer lain.
+
+| Aspek | Detail |
+|-------|--------|
+| **Fungsi** | Dedicated physical host — hanya VM kamu yang jalan di server tersebut |
+| **Compatibility** | Tidak semua machine type support (e2-micro → not compatible) |
+| **Minimum** | Membutuhkan machine type yang cukup besar (N2, C2, dll) |
+
+| Kelebihan | Kekurangan |
+|-----------|------------|
+| Dedicated hardware — tidak shared | Sangat mahal (bayar seluruh host) |
+| Compliance (isolasi fisik) | Overkill untuk kebanyakan use case |
+| Performa lebih predictable | Tidak tersedia untuk semua machine types |
+| BYOL licensing (Oracle, SQL Server) | Setup node group dulu |
+
+```
+  Sole-tenancy hanya tersedia jika:
+  ├── Machine type cukup besar (N2, C2, M2, dll)
+  ├── Sudah buat Sole-tenant node group
+  └── Node group punya capacity
+
+  e2-micro → ⓘ "Not compatible with Sole-tenancy"
+  n2-standard-8 → Bisa pilih node group ✅
+```
+
+**Kapan pakai:**
+- **BYOL licensing** — Oracle, Windows Server, SQL Server yang licensing per-core
+- **Compliance** — regulasi membutuhkan physical isolation
+- **Performance** — butuh jaminan tidak ada noisy neighbor
+
+**Rekomendasi:** Hampir tidak pernah dibutuhkan kecuali ada requirement licensing atau compliance spesifik.
 
 ---
 

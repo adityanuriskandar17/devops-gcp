@@ -22,6 +22,7 @@ Catatan dan dokumentasi DevOps untuk infrastruktur GCP.
 | Compute Engine | [Compute-Engine/](Compute-Engine/) | VM instances, machine types, disks, networking, SSH, monitoring |
 | GKE | [GKE/](GKE/) | Kubernetes Engine — cluster, workloads, scaling, networking, security |
 | IAM | [IAM/](IAM/) | Identity & Access Management — users, roles, service accounts, audit |
+| Tutorial GCE | [Tutorial-GCE/](Tutorial-GCE/) | Tutorial hands-on: create VM, install Nginx, MariaDB, setup database |
 
 ### Cloud Armor
 
@@ -154,6 +155,13 @@ Catatan dan dokumentasi DevOps untuk infrastruktur GCP.
 | 05 | [Best Practices & Audit](IAM/05-best-practices.md) | Least privilege, audit logs, IAM Recommender, org policies, checklist production |
 | 06 | [Google Groups](IAM/06-groups.md) | Create group, manage members, assign IAM role ke group, onboarding/offboarding flow |
 | 07 | [Privileged Access Manager (PAM)](IAM/07-pam.md) | Just-in-Time access, entitlements, grant request, approval workflow, auto-revoke |
+
+### Tutorial GCE (Hands-on)
+
+| # | File | Isi |
+|---|------|-----|
+| -- | [README](Tutorial-GCE/README.md) | Overview tutorial GCE |
+| 01 | [Create VM + Nginx + MariaDB](Tutorial-GCE/01-create-vm-nginx-mariadb.md) | Create e2-micro VM, SSH, install Nginx & MariaDB, secure DB, buat database & table |
 
 ---
 
