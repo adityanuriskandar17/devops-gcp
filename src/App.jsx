@@ -154,6 +154,7 @@ export default function App() {
                   onEdit={() => setMode('edit')}
                   onInsertImage={handleInsertImage}
                   activeFolder={activeFile?.split('/')[0]}
+                  activeFile={activeFile}
                   scrollToLine={scrollToLine}
                 />
               )}

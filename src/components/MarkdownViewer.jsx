@@ -239,12 +239,15 @@ function PageFooterNav({ pages, currentPage, onPageChange }) {
   );
 }
 
-export default function MarkdownViewer({ content, onEdit, onInsertImage, activeFolder, scrollToLine }) {
+export default function MarkdownViewer({ content, onEdit, onInsertImage, activeFolder, activeFile, scrollToLine }) {
   const [uploading, setUploading] = useState(false);
   const [pendingImage, setPendingImage] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [pdfMode, setPdfMode] = useState(null); // null | 'page' | 'all'
+  const [pdfMenuOpen, setPdfMenuOpen] = useState(false);
   const fileInputRef = useRef(null);
   const articleRef = useRef(null);
+  const pdfRef = useRef(null);
 
   const pages = useMemo(() => splitIntoPages(content), [content]);
 
@@ -300,6 +303,62 @@ export default function MarkdownViewer({ content, onEdit, onInsertImage, activeF
   }, [currentPage, pages.length, handlePageChange]);
 
   const headings = parseHeadings(content);
+
+  const baseFilename = useMemo(() => {
+    if (activeFile) {
+      const name = activeFile.split('/').pop().replace(/\.md$/i, '');
+      return name || 'document';
+    }
+    return 'document';
+  }, [activeFile]);
+
+  const pdfContent = useMemo(() => {
+    if (!pdfMode) return '';
+    if (pdfMode === 'page') return pages[currentPage]?.markdown || '';
+    return content;
+  }, [pdfMode, pages, currentPage, content]);
+
+  const pdfFilename = useMemo(() => {
+    if (pdfMode === 'page' && pages.length > 1) {
+      const pageTitle = pages[currentPage]?.title?.replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '-').toLowerCase();
+      return `${baseFilename}-${pageTitle || `hal-${currentPage + 1}`}`;
+    }
+    return baseFilename;
+  }, [pdfMode, baseFilename, pages, currentPage]);
+
+  const handleDownloadPdf = useCallback((mode) => {
+    setPdfMenuOpen(false);
+    setPdfMode(mode);
+  }, []);
+
+  useEffect(() => {
+    if (!pdfMode || !pdfRef.current) return;
+    let cancelled = false;
+
+    const generate = async () => {
+      await new Promise((r) => setTimeout(r, 500));
+      if (cancelled || !pdfRef.current) return;
+
+      const html2pdf = (await import('html2pdf.js')).default;
+
+      await html2pdf()
+        .set({
+          margin: [12, 10, 12, 10],
+          filename: `${pdfFilename}.pdf`,
+          image: { type: 'jpeg', quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true, logging: false },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+        })
+        .from(pdfRef.current)
+        .save();
+
+      if (!cancelled) setPdfMode(null);
+    };
+
+    generate();
+    return () => { cancelled = true; };
+  }, [pdfMode, pdfFilename]);
 
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
@@ -375,6 +434,62 @@ export default function MarkdownViewer({ content, onEdit, onInsertImage, activeF
           </svg>
           Image
         </button>
+        <div className="relative">
+          <button onClick={() => !pdfMode && setPdfMenuOpen(!pdfMenuOpen)} disabled={!!pdfMode}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-500 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-700 transition-colors disabled:opacity-50 shadow-sm"
+            title="Download sebagai PDF">
+            {pdfMode ? (
+              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            ) : (
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            )}
+            {pdfMode ? 'Generating...' : 'PDF'}
+            {!pdfMode && (
+              <svg className={`w-3 h-3 transition-transform ${pdfMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            )}
+          </button>
+
+          {pdfMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setPdfMenuOpen(false)} />
+              <div className="absolute right-0 top-full mt-1.5 z-50 bg-white border border-slate-200 rounded-xl shadow-xl w-52 py-1.5 overflow-hidden">
+                {pages.length > 1 && (
+                  <button onClick={() => handleDownloadPdf('page')}
+                    className="w-full text-left px-4 py-2.5 text-xs hover:bg-blue-50 hover:text-blue-700 transition-colors flex items-center gap-2.5">
+                    <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                    </svg>
+                    <div>
+                      <span className="block font-medium text-slate-700">Halaman ini</span>
+                      <span className="block text-[10px] text-slate-400 mt-0.5">
+                        {pages[currentPage]?.title}
+                      </span>
+                    </div>
+                  </button>
+                )}
+                <button onClick={() => handleDownloadPdf('all')}
+                  className="w-full text-left px-4 py-2.5 text-xs hover:bg-blue-50 hover:text-blue-700 transition-colors flex items-center gap-2.5">
+                  <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <div>
+                    <span className="block font-medium text-slate-700">Semua halaman</span>
+                    <span className="block text-[10px] text-slate-400 mt-0.5">
+                      Seluruh dokumen ({pages.length} halaman)
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </>
+          )}
+        </div>
         <button onClick={onEdit}
           className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-semibold shadow-sm">
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -427,6 +542,38 @@ export default function MarkdownViewer({ content, onEdit, onInsertImage, activeF
 
       {pendingImage && (
         <PositionPicker headings={headings} onSelect={handlePositionSelect} onClose={() => setPendingImage(null)} />
+      )}
+
+      {pdfMode && (
+        <div style={{ position: 'fixed', left: '-9999px', top: 0, width: '210mm', zIndex: -1 }}>
+          <div ref={pdfRef} className="markdown-body"
+            style={{ padding: '24px 20px', background: '#fff', fontSize: '11px', lineHeight: '1.6', color: '#1e293b' }}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                img({ src, alt }) {
+                  return <img src={src} alt={alt || ''} style={{ maxWidth: '100%', borderRadius: '8px', margin: '8px 0' }} />;
+                },
+                code({ inline, className, children, ...props }) {
+                  const codeString = String(children).replace(/\n$/, '');
+                  if (!inline && codeString.includes('\n')) {
+                    return (
+                      <pre style={{
+                        background: '#1e293b', color: '#e2e8f0', padding: '12px', borderRadius: '8px',
+                        fontSize: '9px', lineHeight: '1.5', overflow: 'hidden', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                      }}>
+                        <code>{children}</code>
+                      </pre>
+                    );
+                  }
+                  return <code style={{ background: '#f1f5f9', padding: '1px 4px', borderRadius: '3px', fontSize: '9px' }} {...props}>{children}</code>;
+                },
+              }}
+            >
+              {pdfContent}
+            </ReactMarkdown>
+          </div>
+        </div>
       )}
     </div>
   );
