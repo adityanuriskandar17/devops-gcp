@@ -8,7 +8,7 @@ import multer from 'multer';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOCS_ROOT = __dirname;
-const ALLOWED_FOLDERS = ['Asset-Management', 'Cloud-Armor', 'Cloud-CDN', 'Cloud-KMS', 'Cloud-Monitoring', 'Cloud-Storage', 'Cloud-SQL', 'Compute-Engine', 'GKE', 'IAM', 'Review-IT', 'Tutorial-GCE'];
+const ALLOWED_FOLDERS = ['Asset-Management', 'Cloud-Armor', 'Cloud-CDN', 'Cloud-KMS', 'Cloud-Monitoring', 'Cloud-Storage', 'Cloud-SQL', 'Compute-Engine', 'GKE', 'IAM', 'Review-IT', 'Tutorial-GCE', 'GCP-error'];
 const IMAGES_DIR = path.join(DOCS_ROOT, 'images');
 
 if (!existsSync(IMAGES_DIR)) mkdirSync(IMAGES_DIR, { recursive: true });
