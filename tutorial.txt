@@ -1,0 +1,31 @@
+# Catatan: VM frontend terpisah (microservice ringan)
+
+**Referensi lengkap (GCP Console + langkah sama seperti tutorial lain):**  
+`Tutorial-GCE/04-vm-frontend-nginx-git.md`
+
+---
+
+## Ringkasan tujuan
+
+- Membuat **VM kedua** khusus **frontend** (`bosani-nps-instance-2`), spek **sama** seperti VM backend (`bosani-nps-instance-1`): e2-micro, Debian 12, firewall HTTP/HTTPS.
+- Di VM frontend: **Nginx** (serve UI), **Git** + **repository GitHub** untuk kode frontend.
+- **SSH** dari Console atau `gcloud compute ssh` — sama seperti tutorial 01/02.
+- **Frontend** dikonfigurasi dengan **base URL API** ke **External IP backend** (bukan hardcode tersebar); backend tetap di tutorial 03.
+- Deploy sampai UI di IP frontend bisa memanggil API yang sudah jalan di VM backend.
+
+---
+
+## Isi tutorial 04 (untuk detail)
+
+1. Alasan VM terpisah (diagram singkat).
+2. **Create instance** di Google Cloud Console — nama `bosani-nps-instance-2`, mirror konfigurasi instance-1.
+3. **SSH** ke VM frontend.
+4. **Install Nginx** (`apt update`, `apt install nginx`, verifikasi, tes browser).
+5. **Install Git** + ikut alur **02** (SSH key GitHub, clone).
+6. **Buat & clone** repo frontend.
+7. **Integrasi** frontend ↔ backend (env API, CORS singkat).
+8. **Build & deploy** statis ke `/var/www/html`, reload Nginx.
+
+---
+
+*Sumber perilaku UI GCP: Compute Engine → VM instances — sama dengan referensi di `01-create-vm-nginx-mariadb.md`.*
