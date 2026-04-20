@@ -1,0 +1,16 @@
+{
+  "order": [
+    "Tutorial-GCE",
+    "IAM",
+    "Compute-Engine",
+    "Cloud-Storage",
+    "Cloud-SQL",
+    "Cloud-CDN",
+    "Cloud-Armor",
+    "Cloud-KMS",
+    "GKE",
+    "Cloud-Monitoring",
+    "Review-IT",
+    "GCP-error"
+  ]
+}

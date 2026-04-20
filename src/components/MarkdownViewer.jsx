@@ -243,8 +243,10 @@ export default function MarkdownViewer({ content, onEdit, onInsertImage, activeF
   const [uploading, setUploading] = useState(false);
   const [pendingImage, setPendingImage] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
-  const [pdfMode, setPdfMode] = useState(null); // null | 'page' | 'all'
+  const [pdfMode, setPdfMode] = useState(null); // null | 'page' | 'all' | 'range'
+  const [pdfRange, setPdfRange] = useState(null); // { from, to } (1-based inclusive)
   const [pdfMenuOpen, setPdfMenuOpen] = useState(false);
+  const [rangePickerOpen, setRangePickerOpen] = useState(false);
   const fileInputRef = useRef(null);
   const articleRef = useRef(null);
   const pdfRef = useRef(null);
@@ -315,20 +317,38 @@ export default function MarkdownViewer({ content, onEdit, onInsertImage, activeF
   const pdfContent = useMemo(() => {
     if (!pdfMode) return '';
     if (pdfMode === 'page') return pages[currentPage]?.markdown || '';
+    if (pdfMode === 'range' && pdfRange) {
+      const from = Math.max(1, Math.min(pages.length, pdfRange.from));
+      const to = Math.max(from, Math.min(pages.length, pdfRange.to));
+      return pages.slice(from - 1, to).map((p) => p.markdown).join('\n\n');
+    }
     return content;
-  }, [pdfMode, pages, currentPage, content]);
+  }, [pdfMode, pages, currentPage, content, pdfRange]);
 
   const pdfFilename = useMemo(() => {
     if (pdfMode === 'page' && pages.length > 1) {
       const pageTitle = pages[currentPage]?.title?.replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '-').toLowerCase();
       return `${baseFilename}-${pageTitle || `hal-${currentPage + 1}`}`;
     }
+    if (pdfMode === 'range' && pdfRange) {
+      return `${baseFilename}-hal-${pdfRange.from}-${pdfRange.to}`;
+    }
     return baseFilename;
-  }, [pdfMode, baseFilename, pages, currentPage]);
+  }, [pdfMode, baseFilename, pages, currentPage, pdfRange]);
 
   const handleDownloadPdf = useCallback((mode) => {
     setPdfMenuOpen(false);
+    if (mode === 'range') {
+      setRangePickerOpen(true);
+      return;
+    }
     setPdfMode(mode);
+  }, []);
+
+  const handleRangeConfirm = useCallback((from, to) => {
+    setRangePickerOpen(false);
+    setPdfRange({ from, to });
+    setPdfMode('range');
   }, []);
 
   useEffect(() => {
@@ -353,7 +373,7 @@ export default function MarkdownViewer({ content, onEdit, onInsertImage, activeF
         .from(pdfRef.current)
         .save();
 
-      if (!cancelled) setPdfMode(null);
+      if (!cancelled) { setPdfMode(null); setPdfRange(null); }
     };
 
     generate();
@@ -474,9 +494,23 @@ export default function MarkdownViewer({ content, onEdit, onInsertImage, activeF
                     </div>
                   </button>
                 )}
+                {pages.length > 1 && (
+                  <button onClick={() => handleDownloadPdf('range')}
+                    className="w-full text-left px-4 py-2.5 text-xs hover:bg-blue-50 hover:text-blue-700 transition-colors flex items-center gap-2.5">
+                    <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
+                    </svg>
+                    <div>
+                      <span className="block font-medium text-slate-700">Rentang halaman…</span>
+                      <span className="block text-[10px] text-slate-400 mt-0.5">
+                        Pilih dari halaman berapa sampai berapa
+                      </span>
+                    </div>
+                  </button>
+                )}
                 <button onClick={() => handleDownloadPdf('all')}
                   className="w-full text-left px-4 py-2.5 text-xs hover:bg-blue-50 hover:text-blue-700 transition-colors flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   <div>
@@ -544,6 +578,15 @@ export default function MarkdownViewer({ content, onEdit, onInsertImage, activeF
         <PositionPicker headings={headings} onSelect={handlePositionSelect} onClose={() => setPendingImage(null)} />
       )}
 
+      {rangePickerOpen && (
+        <PdfRangePicker
+          pages={pages}
+          currentPage={currentPage}
+          onConfirm={handleRangeConfirm}
+          onClose={() => setRangePickerOpen(false)}
+        />
+      )}
+
       {pdfMode && (
         <div style={{ position: 'fixed', left: '-9999px', top: 0, width: '210mm', zIndex: -1 }}>
           <div ref={pdfRef} className="markdown-body"
@@ -575,6 +618,127 @@ export default function MarkdownViewer({ content, onEdit, onInsertImage, activeF
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function PdfRangePicker({ pages, currentPage, onConfirm, onClose }) {
+  const total = pages.length;
+  const [from, setFrom] = useState(String(Math.min(currentPage + 1, total)));
+  const [to, setTo] = useState(String(total));
+
+  const fromNum = parseInt(from, 10);
+  const toNum = parseInt(to, 10);
+  const validFrom = Number.isFinite(fromNum) && fromNum >= 1 && fromNum <= total;
+  const validTo = Number.isFinite(toNum) && toNum >= 1 && toNum <= total;
+  const validRange = validFrom && validTo && fromNum <= toNum;
+  const selectedCount = validRange ? (toNum - fromNum + 1) : 0;
+
+  const handleSubmit = () => { if (validRange) onConfirm(fromNum, toNum); };
+  const handleKey = (e) => { if (e.key === 'Enter') handleSubmit(); };
+
+  const preview = validRange
+    ? pages.slice(fromNum - 1, toNum)
+    : [];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="px-6 py-5 border-b border-slate-100">
+          <h3 className="text-base font-semibold text-slate-800">Download PDF — Rentang Halaman</h3>
+          <p className="text-xs text-slate-500 mt-1">
+            Pilih rentang halaman yang ingin di-export (total {total} halaman).
+          </p>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1.5">Dari halaman</label>
+              <input
+                type="number"
+                min="1"
+                max={total}
+                value={from}
+                autoFocus
+                onChange={(e) => setFrom(e.target.value)}
+                onKeyDown={handleKey}
+                className={`w-full px-3 py-2 text-sm rounded-lg border focus:outline-none transition-colors ${
+                  validFrom ? 'border-slate-200 focus:border-blue-500' : 'border-red-300 focus:border-red-500'
+                }`}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1.5">Sampai halaman</label>
+              <input
+                type="number"
+                min="1"
+                max={total}
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                onKeyDown={handleKey}
+                className={`w-full px-3 py-2 text-sm rounded-lg border focus:outline-none transition-colors ${
+                  validTo ? 'border-slate-200 focus:border-blue-500' : 'border-red-300 focus:border-red-500'
+                }`}
+              />
+            </div>
+          </div>
+
+          {!validRange && (from || to) && (
+            <p className="text-[11px] text-red-500">
+              Rentang tidak valid. Pastikan 1 ≤ dari ≤ sampai ≤ {total}.
+            </p>
+          )}
+
+          <div className="flex flex-wrap gap-1.5">
+            <button type="button" onClick={() => { setFrom('1'); setTo(String(total)); }}
+              className="px-2.5 py-1 text-[11px] font-medium text-slate-600 bg-slate-100 rounded-md hover:bg-slate-200 transition-colors">
+              Semua ({total})
+            </button>
+            <button type="button" onClick={() => { setFrom(String(currentPage + 1)); setTo(String(currentPage + 1)); }}
+              className="px-2.5 py-1 text-[11px] font-medium text-slate-600 bg-slate-100 rounded-md hover:bg-slate-200 transition-colors">
+              Halaman ini ({currentPage + 1})
+            </button>
+            <button type="button" onClick={() => { setFrom(String(currentPage + 1)); setTo(String(total)); }}
+              className="px-2.5 py-1 text-[11px] font-medium text-slate-600 bg-slate-100 rounded-md hover:bg-slate-200 transition-colors">
+              Dari sini sampai akhir
+            </button>
+            <button type="button" onClick={() => { setFrom('1'); setTo(String(currentPage + 1)); }}
+              className="px-2.5 py-1 text-[11px] font-medium text-slate-600 bg-slate-100 rounded-md hover:bg-slate-200 transition-colors">
+              Dari awal sampai sini
+            </button>
+          </div>
+
+          {validRange && (
+            <div className="border border-slate-200/80 rounded-xl p-3 bg-slate-50/60 max-h-40 overflow-y-auto">
+              <p className="text-[11px] font-semibold text-slate-500 mb-2">
+                Preview ({selectedCount} halaman):
+              </p>
+              <ol className="space-y-1">
+                {preview.map((p, i) => (
+                  <li key={fromNum + i} className="flex items-center gap-2 text-xs text-slate-700">
+                    <span className="w-5 h-5 rounded-md bg-blue-100 text-blue-700 text-[10px] font-bold flex items-center justify-center shrink-0">
+                      {fromNum + i}
+                    </span>
+                    <span className="truncate">{p.title}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50/50">
+          <button onClick={onClose}
+            className="px-4 py-2 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+            Batal
+          </button>
+          <button onClick={handleSubmit} disabled={!validRange}
+            className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            Download PDF
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

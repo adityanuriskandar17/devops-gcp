@@ -59,3 +59,38 @@ export async function searchFiles(query) {
   if (!res.ok) throw new Error('Failed to search');
   return res.json();
 }
+
+async function handleJson(res) {
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || 'Request failed');
+  return data;
+}
+
+export async function fetchFolders() {
+  const res = await fetch(`${BASE}/folders`);
+  return handleJson(res);
+}
+
+export async function createFolder(name) {
+  const res = await fetch(`${BASE}/folders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  return handleJson(res);
+}
+
+export async function updateFolderOrder(order) {
+  const res = await fetch(`${BASE}/folders/order`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ order }),
+  });
+  return handleJson(res);
+}
+
+export async function deleteFolder(name, { force = false } = {}) {
+  const qs = force ? '?force=true' : '';
+  const res = await fetch(`${BASE}/folders/${encodeURIComponent(name)}${qs}`, { method: 'DELETE' });
+  return handleJson(res);
+}

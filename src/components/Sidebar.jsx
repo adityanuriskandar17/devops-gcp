@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { searchFiles } from '../utils/api';
+import { searchFiles, createFolder, createFile, updateFolderOrder, deleteFolder } from '../utils/api';
 
 function highlightMatch(text, query) {
   if (!query) return text;
@@ -14,12 +14,17 @@ function highlightMatch(text, query) {
   );
 }
 
-export default function Sidebar({ tree, activeFile, onSelectFile, collapsed, onToggle }) {
+export default function Sidebar({ tree, activeFile, onSelectFile, onRefresh, collapsed, onToggle }) {
   const [expanded, setExpanded] = useState({});
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [showCreateMenu, setShowCreateMenu] = useState(false);
+  const [orderMode, setOrderMode] = useState(false);
+  const [draftOrder, setDraftOrder] = useState({});
+  const [actionError, setActionError] = useState(null);
+  const [actionBusy, setActionBusy] = useState(false);
   const debounceRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -61,6 +66,92 @@ export default function Sidebar({ tree, activeFile, onSelectFile, collapsed, onT
     grouped[r.file].push(r);
   }
 
+  // Nomor urut belajar untuk setiap folder (berdasarkan posisi di tree).
+  const folderOrder = {};
+  const folderNames = [];
+  for (const item of tree) {
+    if (item.type === 'folder') {
+      folderNames.push(item.name);
+      folderOrder[item.name] = String(folderNames.length).padStart(2, '0');
+    }
+  }
+
+  // Enter "Atur Urutan" mode: seed draft dengan nomor saat ini.
+  const enterOrderMode = () => {
+    const draft = {};
+    folderNames.forEach((n, i) => { draft[n] = String(i + 1); });
+    setDraftOrder(draft);
+    setOrderMode(true);
+    setActionError(null);
+  };
+
+  const cancelOrderMode = () => {
+    setOrderMode(false);
+    setDraftOrder({});
+    setActionError(null);
+  };
+
+  const saveOrder = async () => {
+    const entries = folderNames.map((n) => {
+      const num = parseInt(draftOrder[n], 10);
+      return { name: n, num: Number.isFinite(num) ? num : Number.MAX_SAFE_INTEGER };
+    });
+    // Stable sort by num, fallback by original index.
+    entries.sort((a, b) => a.num - b.num || folderNames.indexOf(a.name) - folderNames.indexOf(b.name));
+    const newOrder = entries.map((e) => e.name);
+    setActionBusy(true);
+    setActionError(null);
+    try {
+      await updateFolderOrder(newOrder);
+      await onRefresh?.();
+      setOrderMode(false);
+      setDraftOrder({});
+    } catch (e) {
+      setActionError(e.message || 'Gagal menyimpan urutan');
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const handleRemoveFolder = async (name) => {
+    const folderItem = tree.find((t) => t.type === 'folder' && t.name === name);
+    const count = folderItem?.files.length ?? 0;
+    const confirmMsg = count > 0
+      ? `Folder "${name}" berisi ${count} file .md. Hapus SEMUA file dan folder?`
+      : `Hapus folder "${name}"?`;
+    if (!window.confirm(confirmMsg)) return;
+    setActionBusy(true);
+    setActionError(null);
+    try {
+      await deleteFolder(name, { force: count > 0 });
+      await onRefresh?.();
+    } catch (e) {
+      setActionError(e.message || 'Gagal menghapus folder');
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const handleCreateMenu = async ({ name, file, mdFileName }) => {
+    setActionBusy(true);
+    setActionError(null);
+    try {
+      await createFolder(name);
+      if (file) {
+        const text = await file.text();
+        const finalName = (mdFileName || file.name || 'README.md').trim();
+        const safeName = finalName.toLowerCase().endsWith('.md') ? finalName : `${finalName}.md`;
+        await createFile(`${name}/${safeName}`, text);
+      }
+      await onRefresh?.();
+      setShowCreateMenu(false);
+    } catch (e) {
+      setActionError(e.message || 'Gagal membuat menu baru');
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
   return (
     <aside className={`fixed top-0 left-0 h-full bg-[#0f1729] text-white z-30 transition-all duration-300 flex flex-col ${
       collapsed ? 'w-0 overflow-hidden' : 'w-[280px]'
@@ -81,6 +172,53 @@ export default function Sidebar({ tree, activeFile, onSelectFile, collapsed, onT
           </svg>
         </button>
       </div>
+
+      {/* Action bar */}
+      <div className="px-4 pb-2 flex gap-2">
+        <button
+          onClick={() => { setShowCreateMenu(true); setActionError(null); }}
+          disabled={actionBusy || orderMode}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-2 text-[12px] font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          title="Buat menu baru + upload .md">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          Menu Baru
+        </button>
+        {orderMode ? (
+          <>
+            <button
+              onClick={saveOrder}
+              disabled={actionBusy}
+              className="inline-flex items-center justify-center gap-1 px-2.5 py-2 text-[12px] font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 transition-colors disabled:opacity-50">
+              Simpan
+            </button>
+            <button
+              onClick={cancelOrderMode}
+              disabled={actionBusy}
+              className="inline-flex items-center justify-center px-2.5 py-2 text-[12px] font-semibold rounded-lg bg-white/10 text-slate-200 hover:bg-white/15 transition-colors disabled:opacity-50">
+              Batal
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={enterOrderMode}
+            disabled={actionBusy || folderNames.length < 2}
+            className="inline-flex items-center justify-center gap-1 px-2.5 py-2 text-[12px] font-semibold rounded-lg bg-white/10 text-slate-200 hover:bg-white/15 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Atur urutan menu">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 7h13M3 12h9m-9 5h13M17 7l4 4-4 4" />
+            </svg>
+            Urutan
+          </button>
+        )}
+      </div>
+
+      {actionError && (
+        <div className="mx-4 mb-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-[11px] text-red-300">
+          {actionError}
+        </div>
+      )}
 
       {/* Search */}
       <div className="px-4 pb-4">
@@ -162,20 +300,51 @@ export default function Sidebar({ tree, activeFile, onSelectFile, collapsed, onT
             }
 
             const isExpanded = expanded[item.name] === true || (expanded[item.name] === undefined && activeFile?.startsWith(item.name + '/'));
+            const orderNumber = folderOrder[item.name];
             return (
-              <div key={item.name} className="mb-0.5">
-                <button onClick={() => toggle(item.name)}
-                  className="w-full text-left px-3 py-2.5 text-[13px] font-semibold flex items-center gap-2.5 hover:bg-white/5 rounded-lg transition-colors text-slate-300">
-                  <svg className={`w-3 h-3 transition-transform duration-200 text-slate-500 ${isExpanded ? 'rotate-90' : ''}`}
-                    fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                  </svg>
-                  <svg className="w-4 h-4 shrink-0 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                  </svg>
-                  <span className="flex-1">{item.name}</span>
-                  <span className="text-[11px] text-slate-600 font-normal">{item.files.length}</span>
-                </button>
+              <div key={item.name} className="mb-0.5 group">
+                <div className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors text-slate-300">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggle(item.name)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(item.name); } }}
+                    className="flex items-center gap-2 flex-1 min-w-0 text-left cursor-pointer select-none"
+                  >
+                    <svg className={`w-3 h-3 transition-transform duration-200 text-slate-500 ${isExpanded ? 'rotate-90' : ''}`}
+                      fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    </svg>
+                    {orderMode ? (
+                      <input
+                        type="number"
+                        min="1"
+                        value={draftOrder[item.name] ?? ''}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => setDraftOrder((d) => ({ ...d, [item.name]: e.target.value }))}
+                        className="w-12 h-[22px] px-1.5 rounded-md bg-blue-500/10 border border-blue-500/40 text-blue-300 text-[11px] font-bold tabular-nums text-center focus:outline-none focus:border-blue-400"
+                        aria-label={`Urutan ${item.name}`}
+                      />
+                    ) : (
+                      <span className="inline-flex items-center justify-center min-w-[22px] h-[20px] px-1.5 rounded-md bg-blue-500/15 text-blue-400 text-[10px] font-bold tabular-nums shrink-0">
+                        {orderNumber}
+                      </span>
+                    )}
+                    <span className="flex-1 truncate text-[13px] font-semibold">{item.name}</span>
+                    <span className="text-[11px] text-slate-600 font-normal">{item.files.length}</span>
+                  </div>
+                  {!orderMode && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleRemoveFolder(item.name); }}
+                      disabled={actionBusy}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md text-slate-500 hover:text-red-400 hover:bg-red-500/10 disabled:opacity-30"
+                      title={`Hapus folder "${item.name}"`}>
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
                 {isExpanded && (
                   <div className="ml-3 pl-3 border-l border-white/5">
                     {item.files.map((file) => {
@@ -203,6 +372,114 @@ export default function Sidebar({ tree, activeFile, onSelectFile, collapsed, onT
       <div className="px-5 py-3 border-t border-white/5 text-[11px] text-slate-600 font-medium">
         GCP Documentation
       </div>
+
+      {showCreateMenu && (
+        <CreateMenuModal
+          onClose={() => { setShowCreateMenu(false); setActionError(null); }}
+          onSubmit={handleCreateMenu}
+          busy={actionBusy}
+          error={actionError}
+        />
+      )}
     </aside>
+  );
+}
+
+function CreateMenuModal({ onClose, onSubmit, busy, error }) {
+  const [name, setName] = useState('');
+  const [file, setFile] = useState(null);
+  const [mdFileName, setMdFileName] = useState('');
+  const fileInputRef = useRef(null);
+
+  const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$/;
+  const nameValid = NAME_RE.test(name);
+
+  const handleFile = (f) => {
+    if (!f) { setFile(null); return; }
+    if (!f.name.toLowerCase().endsWith('.md')) {
+      setFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      alert('File harus berformat .md');
+      return;
+    }
+    setFile(f);
+    if (!mdFileName) setMdFileName(f.name);
+  };
+
+  const canSubmit = nameValid && !busy;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-slate-100">Buat Menu Baru</h3>
+          <button onClick={onClose} className="p-1 rounded-md text-slate-500 hover:text-white hover:bg-white/10">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-400 mb-1.5">Nama Menu / Folder</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="contoh: Cloud-Run"
+              autoFocus
+              className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500/60"
+            />
+            <p className="mt-1.5 text-[10px] text-slate-500">
+              Gunakan huruf, angka, <code className="text-slate-400">-</code>, atau <code className="text-slate-400">_</code>. Tanpa spasi. Maks 40 karakter.
+            </p>
+            {name && !nameValid && (
+              <p className="mt-1 text-[10px] text-red-400">Format nama tidak valid.</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-400 mb-1.5">Upload File .md <span className="text-slate-600 font-normal">(opsional)</span></label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".md,text/markdown"
+              onChange={(e) => handleFile(e.target.files?.[0])}
+              className="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-white/10 file:text-slate-200 hover:file:bg-white/15 file:cursor-pointer cursor-pointer"
+            />
+            {file && (
+              <div className="mt-2">
+                <label className="block text-[10px] text-slate-500 mb-1">Simpan sebagai</label>
+                <input
+                  type="text"
+                  value={mdFileName}
+                  onChange={(e) => setMdFileName(e.target.value)}
+                  placeholder="README.md"
+                  className="w-full px-3 py-1.5 text-xs bg-white/5 border border-white/10 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500/60"
+                />
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <div className="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-[11px] text-red-300">{error}</div>
+          )}
+        </div>
+
+        <div className="px-5 py-3 border-t border-white/10 flex justify-end gap-2 bg-white/[0.02]">
+          <button onClick={onClose} disabled={busy}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-300 hover:bg-white/10 disabled:opacity-50">
+            Batal
+          </button>
+          <button
+            onClick={() => canSubmit && onSubmit({ name, file, mdFileName })}
+            disabled={!canSubmit}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+            {busy ? 'Membuat…' : 'Buat Menu'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

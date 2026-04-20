@@ -1,17 +1,83 @@
 import express from 'express';
 import cors from 'cors';
 import fs from 'fs/promises';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOCS_ROOT = __dirname;
-const ALLOWED_FOLDERS = ['Asset-Management', 'Cloud-Armor', 'Cloud-CDN', 'Cloud-KMS', 'Cloud-Monitoring', 'Cloud-Storage', 'Cloud-SQL', 'Compute-Engine', 'GKE', 'IAM', 'Review-IT', 'Tutorial-GCE', 'GCP-error'];
 const IMAGES_DIR = path.join(DOCS_ROOT, 'images');
+const CONFIG_FILE = path.join(DOCS_ROOT, 'folders.config.json');
+
+// Default learning order; used only if config file belum ada.
+const DEFAULT_ORDER = [
+  'Tutorial-GCE',
+  'IAM',
+  'Compute-Engine',
+  'Cloud-Storage',
+  'Cloud-SQL',
+  'Cloud-CDN',
+  'Cloud-Armor',
+  'Cloud-KMS',
+  'GKE',
+  'Cloud-Monitoring',
+  'Review-IT',
+  'GCP-error',
+];
+
+// List folder aktif (urutan = urutan belajar). Dimutasi via endpoint dan persisted ke CONFIG_FILE.
+let ALLOWED_FOLDERS = [];
+
+const FOLDER_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$/;
+const RESERVED_NAMES = new Set(['images', 'node_modules', 'src', 'public', '.git', '.vscode', 'dist', 'build']);
+
+function isValidFolderName(name) {
+  if (typeof name !== 'string') return false;
+  if (!FOLDER_NAME_RE.test(name)) return false;
+  if (RESERVED_NAMES.has(name)) return false;
+  return true;
+}
+
+function readConfigSync() {
+  try {
+    const raw = readFileSync(CONFIG_FILE, 'utf-8');
+    const data = JSON.parse(raw);
+    if (Array.isArray(data?.order)) return data.order.filter((x) => typeof x === 'string');
+  } catch {}
+  return null;
+}
+
+async function saveConfig() {
+  await fs.writeFile(CONFIG_FILE, JSON.stringify({ order: ALLOWED_FOLDERS }, null, 2), 'utf-8');
+}
+
+// Sinkronkan ALLOWED_FOLDERS dengan disk: pertahankan urutan dari config,
+// tambahkan folder baru yang muncul di disk di akhir, buang folder yang tidak ada di disk.
+async function reconcileFolders() {
+  const stored = readConfigSync() ?? DEFAULT_ORDER;
+
+  let diskDirs = [];
+  try {
+    const entries = await fs.readdir(DOCS_ROOT, { withFileTypes: true });
+    diskDirs = entries
+      .filter((e) => e.isDirectory() && isValidFolderName(e.name))
+      .map((e) => e.name);
+  } catch {}
+
+  const diskSet = new Set(diskDirs);
+  const ordered = stored.filter((n) => diskSet.has(n));
+  for (const d of diskDirs) {
+    if (!ordered.includes(d)) ordered.push(d);
+  }
+
+  ALLOWED_FOLDERS = ordered;
+  await saveConfig();
+}
 
 if (!existsSync(IMAGES_DIR)) mkdirSync(IMAGES_DIR, { recursive: true });
+await reconcileFolders();
 
 const storage = multer.diskStorage({
   destination(_req, _file, cb) {
@@ -82,6 +148,83 @@ app.get('/api/files', async (_req, res) => {
     }
 
     res.json(tree);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// === Folder (menu) management ===
+
+// List folders + urutan saat ini
+app.get('/api/folders', (_req, res) => {
+  res.json({ order: ALLOWED_FOLDERS });
+});
+
+// Buat folder baru (ditambahkan di akhir urutan)
+app.post('/api/folders', async (req, res) => {
+  const { name } = req.body || {};
+  if (!isValidFolderName(name)) {
+    return res.status(400).json({ error: 'Nama folder tidak valid. Gunakan huruf, angka, - atau _ (maks 40 karakter).' });
+  }
+  if (ALLOWED_FOLDERS.includes(name)) {
+    return res.status(409).json({ error: 'Folder sudah ada.' });
+  }
+  try {
+    const folderPath = path.join(DOCS_ROOT, name);
+    await fs.mkdir(folderPath, { recursive: true });
+    ALLOWED_FOLDERS.push(name);
+    await saveConfig();
+    res.status(201).json({ success: true, order: ALLOWED_FOLDERS });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Simpan urutan baru (array nama folder)
+app.put('/api/folders/order', async (req, res) => {
+  const { order } = req.body || {};
+  if (!Array.isArray(order) || order.some((n) => typeof n !== 'string')) {
+    return res.status(400).json({ error: 'Payload order harus array of string.' });
+  }
+  const current = new Set(ALLOWED_FOLDERS);
+  const incoming = new Set(order);
+  if (order.length !== ALLOWED_FOLDERS.length || order.some((n) => !current.has(n))) {
+    return res.status(400).json({ error: 'Urutan harus berisi semua folder yang ada, tanpa duplikat/tambahan.' });
+  }
+  if (incoming.size !== order.length) {
+    return res.status(400).json({ error: 'Terdapat folder duplikat dalam urutan.' });
+  }
+  ALLOWED_FOLDERS = [...order];
+  await saveConfig();
+  res.json({ success: true, order: ALLOWED_FOLDERS });
+});
+
+// Hapus folder (hanya jika kosong; gambar folder ikut dihapus bila kosong)
+app.delete('/api/folders/:folder', async (req, res) => {
+  const { folder } = req.params;
+  const { force } = req.query;
+  if (!ALLOWED_FOLDERS.includes(folder)) {
+    return res.status(404).json({ error: 'Folder tidak ditemukan.' });
+  }
+  const folderPath = path.join(DOCS_ROOT, folder);
+  try {
+    const entries = await fs.readdir(folderPath);
+    const mdFiles = entries.filter((f) => f.endsWith('.md'));
+    if (mdFiles.length > 0 && force !== 'true') {
+      return res.status(409).json({ error: `Folder berisi ${mdFiles.length} file .md. Hapus file dulu atau gunakan force=true.` });
+    }
+    if (force === 'true') {
+      await fs.rm(folderPath, { recursive: true, force: true });
+    } else {
+      await fs.rmdir(folderPath).catch(async () => {
+        await fs.rm(folderPath, { recursive: true, force: true });
+      });
+    }
+    const imgDir = path.join(IMAGES_DIR, folder);
+    await fs.rm(imgDir, { recursive: true, force: true }).catch(() => {});
+    ALLOWED_FOLDERS = ALLOWED_FOLDERS.filter((f) => f !== folder);
+    await saveConfig();
+    res.json({ success: true, order: ALLOWED_FOLDERS });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

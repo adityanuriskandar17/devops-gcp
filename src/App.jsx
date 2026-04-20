@@ -18,18 +18,24 @@ export default function App() {
   const pendingLineRef = useRef(null);
   const scrollKeyRef = useRef(0);
 
-  useEffect(() => {
-    fetchFileTree()
-      .then((data) => {
-        setTree(data);
+  const loadTree = useCallback(async ({ selectFirst = false } = {}) => {
+    try {
+      const data = await fetchFileTree();
+      setTree(data);
+      if (selectFirst) {
         for (const item of data) {
           if (item.type === 'file') { setActiveFile(item.path); return; }
           if (item.type === 'folder' && item.files.length > 0) { setActiveFile(item.files[0].path); return; }
         }
-      })
-      .catch(() => setError('Failed to load file tree. Is the server running?'))
-      .finally(() => setLoading(false));
+      }
+    } catch {
+      setError('Failed to load file tree. Is the server running?');
+    }
   }, []);
+
+  useEffect(() => {
+    loadTree({ selectFirst: true }).finally(() => setLoading(false));
+  }, [loadTree]);
 
   useEffect(() => {
     if (!activeFile) return;
@@ -89,6 +95,7 @@ export default function App() {
         tree={tree}
         activeFile={activeFile}
         onSelectFile={handleSelectFile}
+        onRefresh={loadTree}
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed((c) => !c)}
       />
