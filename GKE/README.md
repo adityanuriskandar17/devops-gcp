@@ -34,6 +34,9 @@ Detail lengkap: [01-concepts.md](01-concepts.md)
 | 08 | Pricing | [08-pricing.md](08-pricing.md) | Komponen biaya, Autopilot vs Standard, tips hemat |
 | 09 | CLI Cheatsheet | [09-commands-cheatsheet.md](09-commands-cheatsheet.md) | gcloud container + kubectl commands |
 | 10 | Best Practices | [10-best-practices.md](10-best-practices.md) | Security, scaling, cost, checklist production |
+| 11 | Deploy Frontend dari Docker Hub | [11-deploy-frontend-from-dockerhub.md](11-deploy-frontend-from-dockerhub.md) | Tutorial end-to-end: push image → deploy di Console → expose LB → rolling update → scale/autoscale |
+| 12 | Deploy Backend + Integrasi FE/DB | [12-deploy-backend-integrated.md](12-deploy-backend-integrated.md) | Bedah Dockerfile Node.js, build multi-platform, deploy backend sebagai ClusterIP, integrasi dengan frontend (Nginx proxy) + database (Cloud SQL / VM / StatefulSet) |
+| 13 | Deploy MariaDB di GKE (PVC) | [13-deploy-mariadb-database.md](13-deploy-mariadb-database.md) | MariaDB sebagai Pod dengan PersistentVolumeClaim, port-forward untuk akses mysql CLI, migrasi schema dari VM, konsep ephemeral pod, komparasi Deployment vs StatefulSet vs Cloud SQL |
 
 ---
 

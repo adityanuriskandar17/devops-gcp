@@ -1,31 +1,99 @@
-# Catatan: VM frontend terpisah (microservice ringan)
+================================================================================
+GKE — Update integrasi Backend + Frontend + MariaDB (alur GCP Console)
+================================================================================
+Lanjutan seri: GKE/11 (FE) → GKE/12 (BE + integrasi) → GKE/13 (MariaDB).
+Tujuan: backend pakai host DB internal cluster; frontend memanggil API lewat
+Service backend (ClusterIP), tanpa mengandalkan External IP untuk DB/BE.
 
-**Referensi lengkap (GCP Console + langkah sama seperti tutorial lain):**  
-`Tutorial-GCE/04-vm-frontend-nginx-git.md`
+--------------------------------------------------------------------------------
+1) Cek di GCP Console — Kubernetes Engine
+--------------------------------------------------------------------------------
+1. Buka Google Cloud Console → Kubernetes Engine → Clusters.
+2. Pastikan cluster aktif (status Running), lalu Connect (ikon koneksi) jika
+   perlu mengambil perintah gcloud/kubectl.
+3. Kubernetes Engine → Workloads:
+   - bosani-nps-fe   (frontend)
+   - bosani-nps-be   (backend)
+4. Kubernetes Engine → Workloads → dropdown Namespace pilih mariadb:
+   - workload MariaDB Running (tutorial GKE/13).
 
----
+Refresh halaman bila resource baru saja di-apply.
 
-## Ringkasan tujuan
+--------------------------------------------------------------------------------
+2) Verifikasi Service MariaDB (internal only — wajar tanpa External IP)
+--------------------------------------------------------------------------------
+Buka terminal Cloud Shell (+ baru jika perlu), cluster context sudah benar:
 
-- Membuat **VM kedua** khusus **frontend** (`bosani-nps-instance-2`), spek **sama** seperti VM backend (`bosani-nps-instance-1`): e2-micro, Debian 12, firewall HTTP/HTTPS.
-- Di VM frontend: **Nginx** (serve UI), **Git** + **repository GitHub** untuk kode frontend.
-- **SSH** dari Console atau `gcloud compute ssh` — sama seperti tutorial 01/02.
-- **Frontend** dikonfigurasi dengan **base URL API** ke **External IP backend** (bukan hardcode tersebar); backend tetap di tutorial 03.
-- Deploy sampai UI di IP frontend bisa memanggil API yang sudah jalan di VM backend.
+  kubectl get svc -n mariadb
 
----
+Yang diharapkan: Service type ClusterIP untuk MariaDB — TIDAK ada External IP
+itu normal. Backend di cluster mengakses DB lewat DNS Kubernetes, misalnya:
 
-## Isi tutorial 04 (untuk detail)
+  host: 'mariadb.mariadb.svc.cluster.local'
+  port: 3306   (sesuai manifest Service Anda)
 
-1. Alasan VM terpisah (diagram singkat).
-2. **Create instance** di Google Cloud Console — nama `bosani-nps-instance-2`, mirror konfigurasi instance-1.
-3. **SSH** ke VM frontend.
-4. **Install Nginx** (`apt update`, `apt install nginx`, verifikasi, tes browser).
-5. **Install Git** + ikut alur **02** (SSH key GitHub, clone).
-6. **Buat & clone** repo frontend.
-7. **Integrasi** frontend ↔ backend (env API, CORS singkat).
-8. **Build & deploy** statis ke `/var/www/html`, reload Nginx.
+Kode backend selain konfigurasi koneksi DB boleh tetap sama seperti sebelumnya.
 
----
+--------------------------------------------------------------------------------
+3) Build & push image backend baru (tag baru, mis. tag10)
+--------------------------------------------------------------------------------
+Di folder kode backend (ada Dockerfile), contoh untuk GKE (node biasanya amd64):
 
-*Sumber perilaku UI GCP: Compute Engine → VM instances — sama dengan referensi di `01-create-vm-nginx-mariadb.md`.*
+  docker build --tag funcodexai/bosani-nps-be:tag10 --platform linux/amd64 .
+  docker push funcodexai/bosani-nps-be:tag10
+
+Ganti funcodexai/bosani-nps-be sesuai akun & repo Docker Hub Anda.
+Cek di hub.docker.com → repository → tab Tags apakah tag10 sudah muncul.
+
+--------------------------------------------------------------------------------
+4) Rolling update backend di Console (tanpa hapus Deployment)
+--------------------------------------------------------------------------------
+1. Kubernetes Engine → Workloads → klik deployment bosani-nps-be.
+2. ACTIONS → Rolling update / Edit (tergantung UI) → ubah field image ke:
+   funcodexai/bosani-nps-be:tag10
+3. Simpan. Tunggu rollout: tab Managed pods → status Running, Ready.
+
+Opsional variabel DB (user/password/db name): lewat Edit container →
+Environment variables, atau Secret + referensi env — jangan hardcode password
+di image.
+
+--------------------------------------------------------------------------------
+5) Frontend — sambungkan ke backend (bosani-nps-be-service)
+--------------------------------------------------------------------------------
+Backend Service = ClusterIP (mis. bosani-nps-be-service, port 3000). Browser
+user tidak bisa memanggil ClusterIP langsung.
+
+Pola yang disarankan (lihat GKE/12): Nginx di Pod frontend mem-proxy path
+/api ke DNS internal:
+
+  proxy_pass http://bosani-nps-be-service.default.svc.cluster.local:3000/;
+
+Kalau frontend & backend di namespace yang sama, bisa disingkat nama service:
+http://bosani-nps-be-service:3000/
+
+Setelah ubah konfigurasi Nginx (atau base URL fetch server-side), build image
+frontend baru → push → rolling update deployment bosani-nps-fe di Console
+sama seperti langkah backend.
+
+--------------------------------------------------------------------------------
+6) Smoke test
+--------------------------------------------------------------------------------
+- Console → Workloads → bosani-nps-fe / bosani-nps-be → Pods Running.
+- Cloud Shell (opsional, debug dari dalam cluster):
+
+  kubectl run curl-test --rm -it --restart=Never --image=curlimages/curl -- \
+    curl -sS http://bosani-nps-be-service.default.svc.cluster.local:3000/
+
+Sesuaikan path health/API Anda.
+- Browser: buka External IP / hostname Service frontend (LoadBalancer) —
+  uji halaman yang memanggil /api/...
+
+--------------------------------------------------------------------------------
+7) Referensi dokumen di repo
+--------------------------------------------------------------------------------
+GKE/README.md          — indeks seri
+GKE/11-deploy-frontend-from-dockerhub.md
+GKE/12-deploy-backend-integrated.md
+GKE/13-deploy-mariadb-database.md
+
+================================================================================

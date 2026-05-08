@@ -22,7 +22,9 @@ export default function Sidebar({ tree, activeFile, onSelectFile, onRefresh, col
   const [showResults, setShowResults] = useState(false);
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [orderMode, setOrderMode] = useState(false);
-  const [draftOrder, setDraftOrder] = useState({});
+  const [draftList, setDraftList] = useState([]);
+  const [dragIdx, setDragIdx] = useState(null);
+  const [dragOverIdx, setDragOverIdx] = useState(null);
   const [actionError, setActionError] = useState(null);
   const [actionBusy, setActionBusy] = useState(false);
   const debounceRef = useRef(null);
@@ -67,45 +69,54 @@ export default function Sidebar({ tree, activeFile, onSelectFile, onRefresh, col
   }
 
   // Nomor urut belajar untuk setiap folder (berdasarkan posisi di tree).
-  const folderOrder = {};
+  const folderByName = {};
   const folderNames = [];
   for (const item of tree) {
     if (item.type === 'folder') {
       folderNames.push(item.name);
-      folderOrder[item.name] = String(folderNames.length).padStart(2, '0');
+      folderByName[item.name] = item;
     }
   }
+  // Saat orderMode: dari draftList (bisa ter-reorder); selain itu: dari tree order.
+  const displayFolders = orderMode ? draftList : folderNames;
+  const folderOrder = {};
+  displayFolders.forEach((n, i) => { folderOrder[n] = String(i + 1).padStart(2, '0'); });
+  const rootFiles = tree.filter((t) => t.type === 'file');
 
-  // Enter "Atur Urutan" mode: seed draft dengan nomor saat ini.
   const enterOrderMode = () => {
-    const draft = {};
-    folderNames.forEach((n, i) => { draft[n] = String(i + 1); });
-    setDraftOrder(draft);
+    setDraftList([...folderNames]);
     setOrderMode(true);
     setActionError(null);
   };
 
   const cancelOrderMode = () => {
     setOrderMode(false);
-    setDraftOrder({});
+    setDraftList([]);
+    setDragIdx(null);
+    setDragOverIdx(null);
     setActionError(null);
   };
 
-  const saveOrder = async () => {
-    const entries = folderNames.map((n) => {
-      const num = parseInt(draftOrder[n], 10);
-      return { name: n, num: Number.isFinite(num) ? num : Number.MAX_SAFE_INTEGER };
+  const moveItem = (from, to) => {
+    if (from < 0 || to < 0 || from >= draftList.length || to >= draftList.length || from === to) return;
+    setDraftList((list) => {
+      const next = [...list];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
     });
-    // Stable sort by num, fallback by original index.
-    entries.sort((a, b) => a.num - b.num || folderNames.indexOf(a.name) - folderNames.indexOf(b.name));
-    const newOrder = entries.map((e) => e.name);
+  };
+
+  const saveOrder = async () => {
     setActionBusy(true);
     setActionError(null);
     try {
-      await updateFolderOrder(newOrder);
+      await updateFolderOrder(draftList);
       await onRefresh?.();
       setOrderMode(false);
-      setDraftOrder({});
+      setDraftList([]);
+      setDragIdx(null);
+      setDragOverIdx(null);
     } catch (e) {
       setActionError(e.message || 'Gagal menyimpan urutan');
     } finally {
@@ -281,69 +292,115 @@ export default function Sidebar({ tree, activeFile, onSelectFile, onRefresh, col
         </div>
       ) : (
         <nav className="flex-1 overflow-y-auto px-3 py-1">
-          {tree.map((item) => {
-            if (item.type === 'file') {
-              const isActive = activeFile === item.path;
+          {rootFiles.map((item) => {
+            const isActive = activeFile === item.path;
+            return (
+              <button key={item.path} onClick={() => onSelectFile(item.path)}
+                className={`w-full text-left px-3 py-2 text-[13px] rounded-lg flex items-center gap-2.5 transition-all mb-0.5 ${
+                  isActive
+                    ? 'bg-blue-600/15 text-blue-400 font-medium'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                }`}>
+                <svg className="w-4 h-4 shrink-0 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span className="truncate">{item.name}</span>
+              </button>
+            );
+          })}
+
+          {orderMode && displayFolders.length > 0 && (
+            <div className="px-3 pt-2 pb-1 text-[10px] text-slate-500">
+              Seret folder untuk mengatur urutan. Nomor akan otomatis menyesuaikan.
+            </div>
+          )}
+
+          {displayFolders.map((name, idx) => {
+            const item = folderByName[name];
+            if (!item) return null;
+            const orderNumber = folderOrder[name];
+
+            if (orderMode) {
+              const isDragging = dragIdx === idx;
+              const isDragOver = dragOverIdx === idx && dragIdx !== idx;
               return (
-                <button key={item.path} onClick={() => onSelectFile(item.path)}
-                  className={`w-full text-left px-3 py-2 text-[13px] rounded-lg flex items-center gap-2.5 transition-all mb-0.5 ${
-                    isActive
-                      ? 'bg-blue-600/15 text-blue-400 font-medium'
-                      : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
-                  }`}>
-                  <svg className="w-4 h-4 shrink-0 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <div
+                  key={name}
+                  draggable
+                  onDragStart={(e) => { setDragIdx(idx); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', name); } catch {} }}
+                  onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (dragOverIdx !== idx) setDragOverIdx(idx); }}
+                  onDragLeave={() => { if (dragOverIdx === idx) setDragOverIdx(null); }}
+                  onDrop={(e) => { e.preventDefault(); if (dragIdx !== null && dragIdx !== idx) moveItem(dragIdx, idx); setDragIdx(null); setDragOverIdx(null); }}
+                  onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
+                  className={`mb-0.5 flex items-center gap-2 px-2 py-2 rounded-lg border transition-all cursor-grab active:cursor-grabbing ${
+                    isDragging
+                      ? 'opacity-40 border-blue-500/60 bg-blue-500/10'
+                      : isDragOver
+                        ? 'border-blue-400 bg-blue-500/20 ring-2 ring-blue-400/50'
+                        : 'border-white/10 bg-white/[0.03] hover:bg-white/10'
+                  }`}
+                >
+                  <svg className="w-4 h-4 text-slate-500 shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M7 4a1 1 0 11-2 0 1 1 0 012 0zm0 6a1 1 0 11-2 0 1 1 0 012 0zm0 6a1 1 0 11-2 0 1 1 0 012 0zm8-12a1 1 0 11-2 0 1 1 0 012 0zm0 6a1 1 0 11-2 0 1 1 0 012 0zm0 6a1 1 0 11-2 0 1 1 0 012 0z" />
                   </svg>
-                  <span className="truncate">{item.name}</span>
-                </button>
+                  <span className="inline-flex items-center justify-center min-w-[24px] h-[22px] px-1.5 rounded-md bg-blue-500/20 text-blue-300 text-[11px] font-bold tabular-nums shrink-0">
+                    {orderNumber}
+                  </span>
+                  <span className="flex-1 truncate text-[13px] font-semibold text-slate-200">{name}</span>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      onClick={() => moveItem(idx, idx - 1)}
+                      disabled={idx === 0}
+                      title="Pindah ke atas"
+                      className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:hover:bg-transparent">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => moveItem(idx, idx + 1)}
+                      disabled={idx === displayFolders.length - 1}
+                      title="Pindah ke bawah"
+                      className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:hover:bg-transparent">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               );
             }
 
-            const isExpanded = expanded[item.name] === true || (expanded[item.name] === undefined && activeFile?.startsWith(item.name + '/'));
-            const orderNumber = folderOrder[item.name];
+            const isExpanded = expanded[name] === true || (expanded[name] === undefined && activeFile?.startsWith(name + '/'));
             return (
-              <div key={item.name} className="mb-0.5 group">
+              <div key={name} className="mb-0.5 group">
                 <div className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors text-slate-300">
                   <div
                     role="button"
                     tabIndex={0}
-                    onClick={() => toggle(item.name)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(item.name); } }}
+                    onClick={() => toggle(name)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(name); } }}
                     className="flex items-center gap-2 flex-1 min-w-0 text-left cursor-pointer select-none"
                   >
                     <svg className={`w-3 h-3 transition-transform duration-200 text-slate-500 ${isExpanded ? 'rotate-90' : ''}`}
                       fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                     </svg>
-                    {orderMode ? (
-                      <input
-                        type="number"
-                        min="1"
-                        value={draftOrder[item.name] ?? ''}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => setDraftOrder((d) => ({ ...d, [item.name]: e.target.value }))}
-                        className="w-12 h-[22px] px-1.5 rounded-md bg-blue-500/10 border border-blue-500/40 text-blue-300 text-[11px] font-bold tabular-nums text-center focus:outline-none focus:border-blue-400"
-                        aria-label={`Urutan ${item.name}`}
-                      />
-                    ) : (
-                      <span className="inline-flex items-center justify-center min-w-[22px] h-[20px] px-1.5 rounded-md bg-blue-500/15 text-blue-400 text-[10px] font-bold tabular-nums shrink-0">
-                        {orderNumber}
-                      </span>
-                    )}
-                    <span className="flex-1 truncate text-[13px] font-semibold">{item.name}</span>
+                    <span className="inline-flex items-center justify-center min-w-[22px] h-[20px] px-1.5 rounded-md bg-blue-500/15 text-blue-400 text-[10px] font-bold tabular-nums shrink-0">
+                      {orderNumber}
+                    </span>
+                    <span className="flex-1 truncate text-[13px] font-semibold">{name}</span>
                     <span className="text-[11px] text-slate-600 font-normal">{item.files.length}</span>
                   </div>
-                  {!orderMode && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleRemoveFolder(item.name); }}
-                      disabled={actionBusy}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md text-slate-500 hover:text-red-400 hover:bg-red-500/10 disabled:opacity-30"
-                      title={`Hapus folder "${item.name}"`}>
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
-                      </svg>
-                    </button>
-                  )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleRemoveFolder(name); }}
+                    disabled={actionBusy}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md text-slate-500 hover:text-red-400 hover:bg-red-500/10 disabled:opacity-30"
+                    title={`Hapus folder "${name}"`}>
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
+                    </svg>
+                  </button>
                 </div>
                 {isExpanded && (
                   <div className="ml-3 pl-3 border-l border-white/5">
