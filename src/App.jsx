@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar';
 import Breadcrumb from './components/Breadcrumb';
 import MarkdownViewer from './components/MarkdownViewer';
 import MarkdownEditor from './components/MarkdownEditor';
+import Home from './components/Home';
 import { fetchFileTree, fetchFile, saveFile } from './utils/api';
 
 export default function App() {
@@ -12,7 +13,7 @@ export default function App() {
   const [mode, setMode] = useState('view');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [error, setError] = useState(null);
   const [scrollToLine, setScrollToLine] = useState(null);
   const pendingLineRef = useRef(null);
@@ -34,8 +35,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    loadTree({ selectFirst: true }).finally(() => setLoading(false));
+    loadTree().finally(() => setLoading(false));
   }, [loadTree]);
+
+  const handleGoHome = useCallback(() => {
+    setMode('view');
+    setActiveFile(null);
+    setSidebarCollapsed(true);
+  }, []);
 
   useEffect(() => {
     if (!activeFile) return;
@@ -68,6 +75,11 @@ export default function App() {
     });
   }, []);
 
+  const handleSelectFileFromMenu = useCallback((path, lineNumber) => {
+    handleSelectFile(path, lineNumber);
+    setSidebarCollapsed(true);
+  }, [handleSelectFile]);
+
   const handleSave = useCallback(async (newContent) => {
     setSaving(true);
     try {
@@ -90,37 +102,61 @@ export default function App() {
   }, [activeFile, content]);
 
   return (
-    <div className="min-h-screen bg-[#f6f8fb]">
+    <div className="min-h-screen bg-paper">
       <Sidebar
         tree={tree}
         activeFile={activeFile}
-        onSelectFile={handleSelectFile}
+        onSelectFile={handleSelectFileFromMenu}
         onRefresh={loadTree}
+        onGoHome={handleGoHome}
         collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed((c) => !c)}
       />
 
-      {sidebarCollapsed && (
-        <button onClick={() => setSidebarCollapsed(false)}
-          className="fixed top-4 left-4 z-40 p-2.5 bg-slate-900 text-white rounded-xl shadow-lg hover:bg-slate-800 transition-colors"
-          title="Open sidebar">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
+      {!sidebarCollapsed && (
+        <div
+          onClick={() => setSidebarCollapsed(true)}
+          className="fixed inset-0 z-20 bg-ink/50"
+          aria-hidden="true"
+        />
       )}
 
-      <main className={`transition-all duration-300 min-h-screen ${sidebarCollapsed ? 'ml-0' : 'ml-[280px]'}`}>
-        <div className="max-w-[52rem] mx-auto px-6 py-8">
+      {/* Persistent menu bar — always visible, slides with the drawer */}
+      <div className={`fixed top-6 z-50 flex items-center gap-2 transition-all duration-300 ${
+        sidebarCollapsed ? 'left-6' : 'left-[316px]'
+      }`}>
+        <button onClick={() => setSidebarCollapsed((c) => !c)}
+          className="hard-btn hard-btn-fill p-3"
+          title={sidebarCollapsed ? 'Buka menu' : 'Tutup menu'}>
+          {sidebarCollapsed ? (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          )}
+        </button>
+        <button onClick={handleGoHome}
+          className="hard-btn hard-btn-accent p-3"
+          title="Ke halaman utama">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 11.5L12 4l9 7.5M5 10v10h5v-6h4v6h5V10" />
+          </svg>
+        </button>
+      </div>
+
+      <main className="min-h-screen">
+        <div className="max-w-[92rem] mx-auto px-6 md:px-10 py-10 md:py-14 pt-24">
           <Breadcrumb path={activeFile} />
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200/80 text-red-700 rounded-xl flex items-center gap-3 text-sm">
-              <svg className="w-5 h-5 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="hard-panel-flag mb-8 p-4 flex items-center gap-3">
+              <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
-              <span className="flex-1">{error}</span>
-              <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 transition-colors">
+              <span className="flex-1 font-mono text-sm">{error}</span>
+              <button onClick={() => setError(null)} className="hover:opacity-60 transition-opacity">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -131,22 +167,14 @@ export default function App() {
           {loading ? (
             <div className="flex items-center justify-center py-32">
               <div className="flex flex-col items-center gap-4">
-                <div className="w-10 h-10 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-                <span className="text-slate-400 text-sm font-medium">Memuat dokumen...</span>
+                <div className="w-10 h-10 border-4 border-ink-40 border-t-accent animate-spin" />
+                <span className="stamp-label text-ink-40 text-xs">Memuat dokumen...</span>
               </div>
             </div>
           ) : !activeFile ? (
-            <div className="flex flex-col items-center justify-center py-32 text-slate-400">
-              <div className="w-16 h-16 mb-5 rounded-2xl bg-slate-100 flex items-center justify-center">
-                <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <p className="text-base font-semibold text-slate-500">Pilih dokumen</p>
-              <p className="text-sm mt-1 text-slate-400">Pilih file dari sidebar untuk mulai membaca</p>
-            </div>
+            <Home tree={tree} onSelectFile={handleSelectFile} />
           ) : (
-            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm px-8 py-8 lg:px-10">
+            <div className="book-frame px-6 sm:px-10 lg:px-16 py-10 lg:py-14">
               {mode === 'edit' ? (
                 <MarkdownEditor
                   content={content}

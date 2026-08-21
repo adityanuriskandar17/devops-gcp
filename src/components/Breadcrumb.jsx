@@ -3,17 +3,15 @@ export default function Breadcrumb({ path }) {
   const parts = path.split('/');
 
   return (
-    <nav className="flex items-center gap-1 text-[13px] mb-6">
+    <nav className="flex items-center gap-2 font-mono text-xs uppercase tracking-wide mb-6">
       {parts.map((part, i) => {
         const isLast = i === parts.length - 1;
         return (
-          <span key={i} className="flex items-center gap-1">
+          <span key={i} className="flex items-center gap-2">
             {i > 0 && (
-              <svg className="w-3.5 h-3.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
+              <span className="text-ink-40 font-bold" aria-hidden="true">/</span>
             )}
-            <span className={isLast ? 'text-slate-800 font-semibold' : 'text-slate-400'}>
+            <span className={isLast ? 'text-ink font-bold' : 'text-ink-40'}>
               {part}
             </span>
           </span>

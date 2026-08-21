@@ -51,9 +51,9 @@ export default function MarkdownEditor({ content, onSave, onCancel, saving, acti
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <span className="text-sm text-slate-500 font-medium">Editing Mode</span>
+          <span className="stamp-label text-sm text-ink-70">Editing Mode</span>
           {uploading && (
-            <span className="flex items-center gap-1.5 text-xs text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
+            <span className="flex items-center gap-2 font-mono text-xs uppercase tracking-wide text-accent-ink bg-paper-2 border-2 border-ink px-3 py-1.5">
               <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -62,7 +62,7 @@ export default function MarkdownEditor({ content, onSave, onCancel, saving, acti
             </span>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <input
             ref={fileInputRef}
             type="file"
@@ -73,7 +73,7 @@ export default function MarkdownEditor({ content, onSave, onCancel, saving, acti
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+            className="hard-btn flex items-center gap-2 px-3 py-2 text-xs"
             title="Upload screenshot (atau paste / drag-and-drop gambar)"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -83,14 +83,14 @@ export default function MarkdownEditor({ content, onSave, onCancel, saving, acti
           </button>
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+            className="hard-btn px-4 py-2 text-xs"
           >
             Cancel
           </button>
           <button
             onClick={() => onSave(value)}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+            className="hard-btn hard-btn-ok flex items-center gap-2 px-4 py-2 text-xs"
           >
             {saving ? (
               <>
@@ -126,7 +126,7 @@ export default function MarkdownEditor({ content, onSave, onCancel, saving, acti
           visibleDragbar={false}
         />
       </div>
-      <p className="mt-2 text-xs text-slate-400">
+      <p className="mt-3 font-mono text-xs text-ink-40">
         Tip: Anda bisa paste screenshot langsung (Ctrl+V) atau drag-and-drop gambar ke editor.
       </p>
     </div>

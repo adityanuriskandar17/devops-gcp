@@ -1,186 +1,441 @@
 @import "tailwindcss";
 
-:root {
-  --sidebar-width: 280px;
-  --content-max: 52rem;
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN SYSTEM — "Field Manual"
+   Brutalist book: raw paper, stamped ink, blueprint-blue accent.
+   UI shell speaks in monospace (instrument-panel labels/buttons);
+   documentation prose speaks in serif (book body) under black
+   grotesk chapter headings. No soft shadows, no rounded corners —
+   everything sits flat on the page or casts a hard, offset shadow
+   like a card stamped onto paper.
+   ═══════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* Paper / ink */
+  --color-paper: #ece7dc;
+  --color-paper-2: #e2dcc9;
+  --color-paper-3: #d8d0b8;
+  --color-ink: #17140f;
+  --color-ink-70: #4a4636;
+  --color-ink-40: #8c8672;
+  --color-rule: #c9c0a6;
+
+  /* Cover (dark rail / sidebar) */
+  --color-cover: #16130e;
+  --color-cover-2: #241f16;
+  --color-cover-3: #322b1f;
+  --color-oncover: #ece7dc;
+  --color-oncover-dim: #9a9484;
+
+  /* Ink stamps */
+  --color-accent: #1e3ae8;
+  --color-accent-ink: #142b9e;
+  --color-flag: #b3301d;
+  --color-flag-ink: #7e2114;
+  --color-ok: #1f6b3a;
+  --color-ok-ink: #144d29;
+
+  /* Type */
+  --font-display: "Archivo", "Arial Black", sans-serif;
+  --font-body: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Flatten the entire radius scale — brutalism has no rounded corners */
+  --radius-none: 0px;
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
+  --radius-full: 0px;
+
+  /* Replace soft blurred shadows with hard offset "stamp" shadows */
+  --shadow-xs: 2px 2px 0 0 var(--color-ink);
+  --shadow-sm: 3px 3px 0 0 var(--color-ink);
+  --shadow-md: 5px 5px 0 0 var(--color-ink);
+  --shadow-lg: 7px 7px 0 0 var(--color-ink);
+  --shadow-xl: 10px 10px 0 0 var(--color-ink);
+  --shadow-2xl: 14px 14px 0 0 var(--color-ink);
 }
 
 * { box-sizing: border-box; }
 
+html { scroll-behavior: smooth; }
+
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-mono);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: #1e293b;
-  background: #f8fafc;
+  color: var(--color-ink);
+  background-color: var(--color-paper);
+  background-image:
+    linear-gradient(var(--color-rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-rule) 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-position: -1px -1px;
+}
+
+/* Small circular status dots / avatars may stay round — everything else is square */
+.rounded-full { border-radius: 50% !important; }
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-oncover);
 }
 
 /* ─── Scrollbar ─── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+::-webkit-scrollbar-thumb { background: var(--color-ink-40); border: 2px solid var(--color-paper); }
+::-webkit-scrollbar-thumb:hover { background: var(--color-ink-70); }
 
-/* ─── Markdown Body ─── */
+/* Focus ring — crisp, not soft */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ═══ Reusable shell primitives ═══ */
+
+.stamp-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hard-panel {
+  background: var(--color-paper);
+  border: 2px solid var(--color-ink);
+  box-shadow: var(--shadow-md);
+}
+
+.hard-panel-flag {
+  background: var(--color-paper);
+  border: 2px solid var(--color-flag);
+  box-shadow: 3px 3px 0 0 var(--color-flag);
+  color: var(--color-flag-ink);
+}
+
+/* Dark-cover variant of .hard-panel-flag, for error banners that sit on the
+   dark sidebar ("book cover") rather than the light paper surface. */
+.hard-panel-flag-dark {
+  background: var(--color-cover-2);
+  border: 2px solid var(--color-flag);
+  box-shadow: 3px 3px 0 0 var(--color-flag-ink);
+  color: #e7b3a6;
+}
+
+.hard-btn {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 2px solid var(--color-ink);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  box-shadow: 3px 3px 0 0 var(--color-ink);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.hard-btn:hover:not(:disabled) { background: var(--color-paper-2); }
+.hard-btn:active:not(:disabled),
+.hard-btn.is-pressed {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 0 var(--color-ink);
+}
+.hard-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.hard-btn-fill {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  border-color: var(--color-ink);
+}
+.hard-btn-fill:hover:not(:disabled) { background: var(--color-cover-2); }
+
+.hard-btn-accent {
+  background: var(--color-accent);
+  color: var(--color-oncover);
+  border-color: var(--color-ink);
+}
+.hard-btn-accent:hover:not(:disabled) { background: var(--color-accent-ink); }
+
+.hard-btn-ok {
+  background: var(--color-ok);
+  color: var(--color-oncover);
+  border-color: var(--color-ink);
+}
+.hard-btn-ok:hover:not(:disabled) { background: var(--color-ok-ink); }
+
+/* Low-emphasis toolbar control: no resting border/shadow, reveals a hard
+   border + fill only on hover/open. For chrome that sits inside a bar
+   (running-head TOC toggle, small icon-only nav squares) where a full
+   hard-btn stamp shadow at rest would be too heavy. */
+.hard-btn-ghost {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  border: 2px solid transparent;
+  background: transparent;
+  color: var(--color-ink-70);
+  box-shadow: none;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+.hard-btn-ghost:hover:not(:disabled) {
+  background: var(--color-paper-2);
+  border-color: var(--color-ink);
+  color: var(--color-ink);
+}
+.hard-btn-ghost:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.hard-input {
+  font-family: var(--font-mono);
+  border: 2px solid var(--color-ink);
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+.hard-input::placeholder { color: var(--color-ink-40); }
+.hard-input:focus { outline: none; box-shadow: 3px 3px 0 0 var(--color-accent); }
+
+/* Error-state variant of .hard-input, sibling to .hard-panel-flag */
+.hard-input-invalid { border-color: var(--color-flag); }
+.hard-input-invalid:focus { box-shadow: 3px 3px 0 0 var(--color-flag); }
+
+/* ═══ Book frame & spread ═══ */
+
+.book-frame {
+  background: var(--color-paper);
+  border: 3px solid var(--color-ink);
+  box-shadow: 12px 12px 0 0 var(--color-ink);
+  position: relative;
+}
+
+.running-head {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-ink-70);
+  border-bottom: 3px solid var(--color-ink);
+  padding: 0.85rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--color-paper-2);
+}
+
+.folio {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-ink-70);
+}
+
+/* Two-column "open book" flow for the live reading view.
+   Kept separate from .markdown-body so the hidden PDF export
+   node (which reuses .markdown-body) stays single-column. */
+.book-columns {
+  column-count: 2;
+  column-gap: 4rem;
+  column-rule: 3px double var(--color-ink);
+  position: relative;
+}
+.book-columns > *:first-child { margin-top: 0; }
+.book-columns h1,
+.book-columns h2,
+.book-columns h3,
+.book-columns h4,
+.book-columns blockquote,
+.book-columns img,
+.book-columns ul,
+.book-columns ol {
+  break-inside: avoid;
+}
+/* Wide content (ASCII diagrams, tables) doesn't fit a half-width column —
+   let it break out and span the full book-frame width instead of clipping. */
+.book-columns pre,
+.book-columns table {
+  break-inside: avoid;
+  column-span: all;
+}
+
+@media (max-width: 900px) {
+  .book-columns { column-count: 1; column-gap: 0; column-rule: none; }
+}
+
+/* ─── Markdown Body (book prose) ─── */
 .markdown-body {
-  font-size: 0.9375rem;
-  line-height: 1.8;
-  color: #334155;
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  line-height: 1.85;
+  color: var(--color-ink);
 }
 
 .markdown-body > *:first-child { margin-top: 0; }
 
 .markdown-body h1 {
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 2rem 0 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #e2e8f0;
-  letter-spacing: -0.025em;
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  margin: 0 0 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 4px solid var(--color-ink);
+  letter-spacing: -0.01em;
+  line-height: 1.05;
 }
 
 .markdown-body h2 {
-  font-size: 1.375rem;
-  font-weight: 700;
-  color: #1e40af;
-  margin: 2rem 0 0.75rem;
-  letter-spacing: -0.015em;
+  font-family: var(--font-display);
+  font-size: 1.625rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  margin: 2.5rem 0 1rem;
+  letter-spacing: -0.005em;
+  line-height: 1.15;
 }
 
 .markdown-body h3 {
-  font-size: 1.125rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #1e293b;
-  margin: 1.5rem 0 0.5rem;
+  color: var(--color-accent-ink);
+  margin: 1.75rem 0 0.65rem;
 }
 
 .markdown-body h4 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #334155;
-  margin: 1.25rem 0 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-70);
+  margin: 1.5rem 0 0.5rem;
 }
 
 .markdown-body p {
-  margin: 0.75rem 0;
-  line-height: 1.8;
+  margin: 0.9rem 0;
+  line-height: 1.85;
+  text-align: left;
 }
 
 .markdown-body ul,
 .markdown-body ol {
-  margin: 0.75rem 0;
+  margin: 0.9rem 0;
   padding-left: 1.5rem;
 }
 
 .markdown-body li {
-  margin: 0.35rem 0;
+  margin: 0.4rem 0;
   line-height: 1.8;
 }
 
 .markdown-body li::marker {
-  color: #94a3b8;
+  color: var(--color-accent);
+  font-weight: 700;
 }
 
-.markdown-body strong { color: #0f172a; }
+.markdown-body strong { color: var(--color-ink); font-weight: 700; }
+
+.markdown-body em { color: var(--color-ink-70); }
 
 .markdown-body a {
-  color: #2563eb;
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.15s;
+  color: var(--color-accent-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: var(--color-accent);
+  text-underline-offset: 2px;
 }
-.markdown-body a:hover {
-  border-bottom-color: #2563eb;
-}
+.markdown-body a:hover { background: var(--color-accent); color: var(--color-oncover); }
 
 .markdown-body hr {
   border: none;
-  height: 1px;
-  background: linear-gradient(to right, transparent, #cbd5e1, transparent);
-  margin: 2rem 0;
+  height: 0;
+  border-top: 3px double var(--color-ink);
+  margin: 2.5rem 0;
 }
 
 /* ─── Code ─── */
 .markdown-body pre {
-  background: #0f172a;
-  color: #e2e8f0;
-  border-radius: 12px;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  border: 2px solid var(--color-ink);
+  box-shadow: 4px 4px 0 0 var(--color-ink-40);
   padding: 1.25rem 1.5rem;
   overflow-x: auto;
-  font-size: 0.8125rem;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
   line-height: 1.7;
-  margin: 1.25rem 0;
-  border: 1px solid #1e293b;
+  margin: 1.5rem 0;
 }
 
 .markdown-body code:not(pre code) {
-  background: #f1f5f9;
-  color: #be185d;
-  padding: 0.15rem 0.45rem;
-  border-radius: 5px;
-  font-size: 0.84em;
-  font-weight: 500;
-  border: 1px solid #e2e8f0;
+  font-family: var(--font-mono);
+  background: var(--color-paper-3);
+  color: var(--color-flag-ink);
+  padding: 0.1rem 0.4rem;
+  border: 1.5px solid var(--color-ink);
+  font-size: 0.85em;
+  font-weight: 600;
 }
 
 /* ─── Tables ─── */
 .markdown-body table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  margin: 1.25rem 0;
-  font-size: 0.84rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  overflow: hidden;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.9375rem;
+  font-family: var(--font-body);
+  border: 2px solid var(--color-ink);
 }
 
 .markdown-body th {
-  background: #f1f5f9;
-  font-weight: 600;
-  color: #1e293b;
-  padding: 0.625rem 0.875rem;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  padding: 0.65rem 0.9rem;
   text-align: left;
-  border-bottom: 2px solid #e2e8f0;
-  white-space: nowrap;
+  border: 1px solid var(--color-ink);
 }
 
 .markdown-body td {
-  padding: 0.5rem 0.875rem;
-  border-bottom: 1px solid #f1f5f9;
-  color: #475569;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--color-rule);
+  color: var(--color-ink);
   vertical-align: top;
 }
 
-.markdown-body tr:last-child td { border-bottom: none; }
-
-.markdown-body tbody tr:hover {
-  background: #f8fafc;
-}
+.markdown-body tbody tr:nth-child(even) { background: var(--color-paper-2); }
 
 /* ─── Blockquote ─── */
 .markdown-body blockquote {
-  border-left: 3px solid #3b82f6;
-  background: linear-gradient(to right, #eff6ff, transparent);
-  margin: 1.25rem 0;
-  padding: 0.875rem 1.25rem;
-  border-radius: 0 10px 10px 0;
-  color: #334155;
+  border-left: 4px solid var(--color-flag);
+  background: var(--color-paper-2);
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  color: var(--color-ink-70);
 }
 
-.markdown-body blockquote p {
-  margin: 0.25rem 0;
-}
+.markdown-body blockquote p { margin: 0.25rem 0; text-align: left; }
 
 /* ─── Highlight for search ─── */
 .search-highlight {
   transition: background-color 0.4s ease;
-  border-radius: 4px;
 }
 
-/* ─── Editor overrides ─── */
+/* ─── Editor overrides (leave uiw/react-md-editor internals be, just square the frame) ─── */
 .w-md-editor {
-  border-radius: 12px !important;
+  border: 2px solid var(--color-ink) !important;
+  border-radius: 0 !important;
+  box-shadow: var(--shadow-md) !important;
 }
