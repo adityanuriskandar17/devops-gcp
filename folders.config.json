@@ -1,5 +1,10 @@
 {
   "order": [
+    "Linux-Fundamentals",
+    "Bash-Scripting",
+    "Git-VCS",
+    "Networking-Protocols",
+    "Docker-Containers",
     "Compute-Engine",
     "IAM",
     "Cloud-Storage",

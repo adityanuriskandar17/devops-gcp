@@ -9,6 +9,16 @@ Catatan dan dokumentasi DevOps untuk infrastruktur GCP.
 
 ## Daftar Topik
 
+### Fundamental DevOps (Cloud-Agnostic)
+
+| Topik | Folder | Keterangan |
+|-------|--------|------------|
+| Linux Fundamentals | [Linux-Fundamentals/](Linux-Fundamentals/) | Kernel vs distro, filesystem, user/permission, process management, package management |
+| Bash Scripting | [Bash-Scripting/](Bash-Scripting/) | Shell scripting untuk automation — variables, control flow, functions, text processing |
+| Git & Version Control | [Git-VCS/](Git-VCS/) | Git concepts, branching/merging, remote collaboration, GitHub/GitLab/Bitbucket |
+| Networking & Protocols | [Networking-Protocols/](Networking-Protocols/) | OSI/TCP-IP, DNS, HTTP/HTTPS/TLS, proxy/load balancer/firewall, SSH, email protocols |
+| Docker & Containers | [Docker-Containers/](Docker-Containers/) | Image, Dockerfile, registry, networking/volumes, Docker Compose |
+
 ### Google Cloud Platform
 
 | Topik | Folder | Keterangan |
@@ -23,6 +33,68 @@ Catatan dan dokumentasi DevOps untuk infrastruktur GCP.
 | GKE | [GKE/](GKE/) | Kubernetes Engine — cluster, workloads, scaling, networking, security |
 | IAM | [IAM/](IAM/) | Identity & Access Management — users, roles, service accounts, audit |
 | Tutorial GCE | [Tutorial-GCE/](Tutorial-GCE/) | Tutorial hands-on: create VM, install Nginx, MariaDB, setup database |
+
+### Linux Fundamentals
+
+| # | File | Isi |
+|---|------|-----|
+| -- | [README](Linux-Fundamentals/README.md) | Kenapa Linux penting untuk DevOps, kernel vs distro vs userland |
+| 01 | [Konsep Dasar Linux](Linux-Fundamentals/01-concepts.md) | Kernel vs distro, keluarga distro, Filesystem Hierarchy Standard, boot process |
+| 02 | [User, Group & Permission](Linux-Fundamentals/02-file-permissions.md) | UID/GID, rwx & octal, chmod/chown, setuid/setgid/sticky bit, sudo vs su |
+| 03 | [Process Management](Linux-Fundamentals/03-process-management.md) | Process state, job control, signals, systemd unit, systemctl, journalctl |
+| 04 | [Package Management](Linux-Fundamentals/04-package-management.md) | apt vs dnf vs zypper vs snap/flatpak, repository & GPG, security updates |
+| 05 | [Commands Cheatsheet](Linux-Fundamentals/05-commands-cheatsheet.md) | Navigation, file ops, text processing, disk, networking, archiving, search |
+| 06 | [Best Practices](Linux-Fundamentals/06-best-practices.md) | Hardening dasar, permission hygiene, log rotation, checklist production |
+
+### Bash Scripting
+
+| # | File | Isi |
+|---|------|-----|
+| -- | [README](Bash-Scripting/README.md) | Kenapa Bash penting untuk DevOps automation, flow shell → script → interpreter |
+| 01 | [Konsep & Cara Kerja](Bash-Scripting/01-concepts.md) | Shebang, cara eksekusi script, variables, quoting, exit code, command substitution |
+| 02 | [Control Flow](Bash-Scripting/02-control-flow.md) | if/elif/else, test operators, case, for/while/until loop, break/continue |
+| 03 | [Functions & Arguments](Bash-Scripting/03-functions-arguments.md) | Function, positional parameters, shift, local vs global, getopts |
+| 04 | [Text Processing](Bash-Scripting/04-text-processing.md) | grep/sed/awk/cut/sort/uniq/tr, pipes & redirection, heredoc |
+| 05 | [Commands Cheatsheet](Bash-Scripting/05-commands-cheatsheet.md) | String ops, array, arithmetic, file test, loop syntax, debugging flags |
+| 06 | [Best Practices](Bash-Scripting/06-best-practices.md) | Quoting, `set -euo pipefail`, ShellCheck, trap, idempotency, checklist |
+
+### Git & Version Control
+
+| # | File | Isi |
+|---|------|-----|
+| -- | [README](Git-VCS/README.md) | Apa itu version control, kenapa Git menang, empat area kerja Git |
+| 01 | [Konsep & Cara Kerja](Git-VCS/01-concepts.md) | Snapshot model, three-tree architecture, anatomy commit, branch sebagai pointer |
+| 02 | [Branching & Merging](Git-VCS/02-branching-merging.md) | Fast-forward vs merge commit vs three-way merge, rebase vs merge, resolve conflict |
+| 03 | [Remote & Collaboration](Git-VCS/03-remote-collaboration.md) | Clone/fetch/pull, PR/MR workflow, GitHub/GitLab/Bitbucket, protected branch |
+| 04 | [Commands Cheatsheet](Git-VCS/04-commands-cheatsheet.md) | Setup, snapshot, branching, remote ops, undo & recovery (reset/revert/reflog) |
+| 05 | [Best Practices](Git-VCS/05-best-practices.md) | Commit convention, .gitignore, branching strategy, signed commit, secret handling |
+
+### Networking & Protocols
+
+| # | File | Isi |
+|---|------|-----|
+| -- | [README](Networking-Protocols/README.md) | Kenapa DevOps perlu paham networking, perjalanan satu request |
+| 01 | [OSI & TCP/IP Model](Networking-Protocols/01-osi-tcp-ip.md) | 7 layer OSI, 4 layer TCP/IP, TCP vs UDP, three-way handshake, port & socket |
+| 02 | [DNS](Networking-Protocols/02-dns.md) | Cara kerja resolusi DNS, record types, TTL, caching, debugging propagasi |
+| 03 | [HTTP/HTTPS & SSL/TLS](Networking-Protocols/03-http-https-ssl-tls.md) | Status code, HTTP/1.1 vs 2 vs 3, TLS handshake, chain of trust |
+| 04 | [Proxy, Load Balancer & Firewall](Networking-Protocols/04-proxy-load-balancer-firewall.md) | Forward vs reverse proxy, algoritma load balancing, L4 vs L7, firewall |
+| 05 | [SSH & FTP](Networking-Protocols/05-ssh-ftp.md) | SSH architecture, key pair, SFTP vs FTP vs FTPS, port forwarding/tunneling |
+| 06 | [Email Protocols](Networking-Protocols/06-email-protocols.md) | SMTP vs IMAP vs POP3, SPF/DKIM/DMARC, whitelisting/greylisting |
+| 07 | [Commands Cheatsheet](Networking-Protocols/07-commands-cheatsheet.md) | dig, nslookup, ping, traceroute, mtr, netstat, ss, nc, curl, tcpdump |
+| 08 | [Best Practices](Networking-Protocols/08-best-practices.md) | Network segmentation, least-privilege firewall, TLS everywhere, checklist |
+
+### Docker & Containers
+
+| # | File | Isi |
+|---|------|-----|
+| -- | [README](Docker-Containers/README.md) | Kenapa Docker penting, arsitektur Docker (client/daemon/containerd/runc) |
+| 01 | [Konsep & Cara Kerja](Docker-Containers/01-concepts.md) | Namespaces, cgroups, union filesystem, image layers, flow `docker run` |
+| 02 | [Dockerfile](Docker-Containers/02-dockerfile.md) | Instruction reference, CMD vs ENTRYPOINT, COPY vs ADD, multi-stage build |
+| 03 | [Images & Registry](Docker-Containers/03-images-registry.md) | Build/tag/push/pull, naming convention, Docker Hub vs private vs cloud registry |
+| 04 | [Networking & Volumes](Docker-Containers/04-networking-volumes.md) | Network driver, DNS antar container, port publishing, volume vs bind mount |
+| 05 | [Docker Compose](Docker-Containers/05-docker-compose.md) | Struktur compose file, contoh 3-tier app, compose commands, `.env` usage |
+| 06 | [Commands Cheatsheet](Docker-Containers/06-commands-cheatsheet.md) | Referensi cepat semua command Docker per kategori |
+| 07 | [Best Practices](Docker-Containers/07-best-practices.md) | Non-root user, minimal base image, pin tag, health check, secrets, checklist |
 
 ### Cloud Armor
 
@@ -167,6 +239,11 @@ Catatan dan dokumentasi DevOps untuk infrastruktur GCP.
 
 ## Topik Selanjutnya (TODO)
 
+- [x] Linux Fundamentals (kernel, distro, filesystem, permission, process, package management)
+- [x] Bash Scripting (variables, control flow, functions, text processing)
+- [x] Git & Version Control (branching, merging, remote collaboration)
+- [x] Networking & Protocols (OSI/TCP-IP, DNS, HTTP/TLS, proxy/LB/firewall, SSH, email)
+- [x] Docker & Containers (image, Dockerfile, registry, networking/volumes, compose)
 - [x] Compute Engine (VM management, instance groups, snapshots)
 - [x] IAM & Security (service accounts, roles, organization policy)
 - [x] Cloud SQL / Database
