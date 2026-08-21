@@ -290,19 +290,23 @@ Console: Monitoring → Uptime checks → (klik check name)
 |-----------|------------|
 | Probing dari 6 global regions | Hanya cek dari luar (tidak cek internal health) |
 | Deteksi downtime cepat (1 min) | TCP check tidak validasi response content |
-| SSL certificate monitoring gratis | Free tier: 10 uptime checks per project |
+| SSL certificate monitoring gratis | Free tier dihitung per **execution**, bukan per check — frequency tinggi bisa habiskan kuota lebih cepat |
 | Auto-create alert | Tidak bisa check gRPC / WebSocket |
 | Latency tracking per region | Private endpoint butuh konfigurasi khusus |
 | Integrasi native dengan alerting | Content match terbatas (simple substring) |
 
 ---
 
-## Free Tier
+## Free Tier & Pricing
 
-| Item | Gratis |
-|------|--------|
-| Uptime checks | **10 per project** |
-| Probe locations | 6 regions (semua gratis) |
-| SSL monitoring | Gratis (included dengan HTTPS check) |
-| Frequency | Semua frequency gratis (1m, 5m, 10m, 15m) |
-| Alerting | Gratis (bagian dari alerting policies) |
+Billing uptime checks di GCP bersifat **execution-based**, bukan per jumlah check yang dibuat:
+
+| Item | Gratis | Berbayar setelahnya |
+|------|--------|---------------------|
+| Uptime check executions | **1.000.000 executions/bulan** | $0.30 per 1.000 executions |
+| Probe locations | 6 regions (semua gratis, tidak menambah biaya terpisah) | — |
+| SSL monitoring | Gratis (included dengan HTTPS check) | — |
+| Frequency | Semua frequency tersedia gratis untuk dipilih (1m, 5m, 10m, 15m) — tapi frequency lebih cepat = lebih banyak executions | — |
+| Alerting | Gratis (bagian dari alerting policies) | — |
+
+**Penting:** "Executions" dihitung per probe per region per run — bukan per uptime check yang dibuat. Contoh: **satu** check dengan frequency **1 menit** menghasilkan sekitar `60 × 24 × 30 = 43.200 executions/bulan` (per region yang aktif). Jadi jumlah check yang "gratis" tergantung total frequency × regions × jumlah check, bukan angka tetap seperti "10 check gratis per project".

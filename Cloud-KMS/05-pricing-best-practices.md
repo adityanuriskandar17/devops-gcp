@@ -30,12 +30,15 @@ Cloud KMS pricing terdiri dari **2 komponen** utama:
 
 | Operasi | Harga |
 |---------|-------|
-| **Encrypt / Decrypt / Sign / Verify / MAC** | **$0.03** per 10,000 operasi |
+| **Symmetric encrypt/decrypt/MAC (Software)** | **$0.03** per 10,000 operasi |
+| **Asymmetric sign/verify (RSA 3072/4096, EC) & operasi HSM** | **~$0.15** per 10,000 operasi (lebih mahal dari symmetric software) |
 | Operasi pertama 10,000/bulan | Tergantung free tier eligibility |
+
+**Catatan:** $0.03/10,000 hanya berlaku untuk operasi symmetric protection level Software. Asymmetric key dengan ukuran besar (RSA 3072/4096, EC) dan operasi dengan protection level HSM dikenakan tarif lebih tinggi (~$0.15/10,000 operasi).
 
 ### Free Tier (Autokey)
 
-Jika menggunakan **Cloud KMS Autokey** (auto-create keys via Assured Workloads):
+**Cloud KMS Autokey** adalah fitur standalone untuk auto-provision CMEK key saat resource dibuat — **tidak terkait/tidak butuh Assured Workloads**. Free tier berikut hanya berlaku untuk key yang dibuat via Autokey:
 
 | Item | Gratis |
 |------|--------|

@@ -148,7 +148,7 @@ sudo bash add-google-cloud-ops-agent-repo.sh --also-install
 | 2 | Exclusion filter untuk debug + health check logs | 30-60% log cost turun |
 | 3 | Set log level WARN+ di production | 50-80% log volume turun |
 | 4 | Archive log ke Cloud Storage (bukan simpan di Logging) | 10x lebih murah |
-| 5 | Review uptime checks — stay dalam 10 free tier | $0 vs $0.30/check |
+| 5 | Review uptime checks — kurangi frequency/region agar executions tetap di free tier | Free tier: 1.000.000 executions/bulan, lalu $0.30 per 1.000 executions |
 | 6 | Jangan enable Data Access audit kecuali wajib | Bisa sangat mahal |
 | 7 | Set billing alert untuk Monitoring + Logging | Prevent surprise bill |
 | 8 | Review custom metrics bulanan — hapus yang tidak terpakai | Kurangi ingestion |

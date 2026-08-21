@@ -30,8 +30,8 @@ Data backup otomatis berpindah ke class yang lebih murah seiring waktu, lalu dih
 ║  Active backup        Monthly backup       Disaster Recovery          ║
 ║  Bisa restore cepat   Jarang diakses       Hanya untuk DR             ║
 ║                                                                       ║
-║  Biaya/GB: $0.023     Biaya/GB: $0.013     Biaya/GB: $0.006          ║
-║  (termahal)           (hemat 43%)          (hemat 74%)                ║
+║  Biaya/GB: $0.023     Biaya/GB: $0.016     Biaya/GB: $0.006          ║
+║  (termahal)           (hemat 30%)          (hemat 74%)                ║
 ║                                                                       ║
 ║  Hari ke-365 (1 tahun): AUTO DELETE                                   ║
 ║                                                                       ║
@@ -76,11 +76,11 @@ Tanpa lifecycle (semua Standard):
 
 Dengan lifecycle:
   Hari 0-30:   8 GB × $0.023  = $0.18  (Standard, 1 bulan)
-  Hari 30-120: 8 GB × $0.013  = $0.10  (Nearline, 3 bulan)
+  Hari 30-120: 8 GB × $0.016  = $0.13  (Nearline, 3 bulan)
   Hari 120-365:8 GB × $0.006  = $0.05  (Coldline, 8 bulan)
-  Total per backup: ~$0.33 (vs $2.76 kalau Standard terus)
+  Total per backup: ~$0.36 (vs $2.76 kalau Standard terus)
   
-  HEMAT ~88%
+  HEMAT ~87%
 ```
 
 ---

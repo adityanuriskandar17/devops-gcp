@@ -198,7 +198,8 @@ gcloud storage buckets create gs://ftl-images \
 
 # Buat bucket dual-region (Jakarta + Singapore)
 gcloud storage buckets create gs://ftl-backups \
-    --location=asia-southeast1+asia-southeast2
+    --location=ASIA \
+    --placement=asia-southeast1,asia-southeast2
 
 # Buat bucket multi-region Asia
 gcloud storage buckets create gs://ftl-global-assets \

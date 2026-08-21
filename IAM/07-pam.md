@@ -433,10 +433,11 @@ Entitlement: "emergency-break-glass"
 |-----------|------------|
 | **Zero standing privileges** — admin access hanya saat dibutuhkan | Memerlukan setup entitlements |
 | **Approval workflow** — control siapa yang approve | Approval bisa menambah delay |
-| **Auto-revoke** — tidak ada lupa cabut akses | Memerlukan Cloud Armor Enterprise atau SCC Premium untuk multi-level approval |
+| **Auto-revoke** — tidak ada lupa cabut akses | — |
 | **Justification** — audit trail kenapa akses diminta | — |
 | **Self-service** — user request sendiri | — |
 | **Emergency mode** — auto-approve untuk on-call | — |
+| **Multi-level approval** — native, sampai 2 level approval berurutan, max 5 approver per level (tidak butuh Cloud Armor Enterprise atau SCC Premium) | — |
 
 ---
 

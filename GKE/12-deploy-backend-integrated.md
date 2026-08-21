@@ -348,7 +348,7 @@ spec:
             - name: DB_PASSWORD
               valueFrom: { secretKeyRef: { name: db-creds, key: DB_PASSWORD } }
         - name: cloud-sql-proxy
-          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:latest
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.0  # pakai tag versi eksplisit, jangan :latest
           args:
             - "--private-ip"
             - "fc-nps:us-central1:bosani-nps-db"  # instance connection name

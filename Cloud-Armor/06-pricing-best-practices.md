@@ -11,18 +11,22 @@ Dokumentasi harga **Cloud Armor** (Standard vs Enterprise), estimasi biaya, dan 
 Cloud Armor memiliki **2 tier** utama:
 
 ```
-┌───────────────────────────────────────────────────────────────┐
-│                     Cloud Armor Tiers                          │
-│                                                               │
-│  ┌─────────────────────────┐  ┌─────────────────────────────┐│
-│  │  STANDARD               │  │  ENTERPRISE                  ││
-│  │                         │  │                              ││
-│  │  Pay-as-you-go          │  │  Paygo atau Annual           ││
-│  │  Basic DDoS protection  │  │  Advanced DDoS + WAF bundled ││
-│  │  Manual rules           │  │  Adaptive Protection full    ││
-│  │  ~$200/mo per project   │  │  $3,000/mo per billing acct  ││
-│  └─────────────────────────┘  └─────────────────────────────┘│
-└───────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────┐
+│                          Cloud Armor Tiers                             │
+│                                                                       │
+│  ┌───────────────────┐ ┌────────────────────┐ ┌────────────────────┐│
+│  │  STANDARD          │ │  ENTERPRISE Paygo  │ │  ENTERPRISE Annual  ││
+│  │                    │ │                     │ │                     ││
+│  │  Pay-as-you-go     │ │  No commitment      │ │  12-month commit    ││
+│  │  Basic DDoS        │ │  Advanced DDoS +    │ │  Advanced DDoS +    ││
+│  │  protection        │ │  WAF bundled        │ │  WAF bundled        ││
+│  │  Manual rules      │ │  Adaptive Protect.  │ │  Adaptive Protect.  ││
+│  │                    │ │  full               │ │  full               ││
+│  │  $5/policy/mo +     │ │  ~$200/mo base,     │ │  ~$3,000/mo base,   ││
+│  │  $1/rule/mo +       │ │  2 resources        │ │  100 resources      ││
+│  │  $0.75/1M requests  │ │  included           │ │  included           ││
+│  └───────────────────┘ └────────────────────┘ └────────────────────┘│
+└───────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -33,19 +37,22 @@ Cloud Armor memiliki **2 tier** utama:
 
 | Komponen | Harga |
 |---------|-------|
-| **Per policy** | Included (gratis sampai batas) |
-| **Per project** (jika ada policy) | **~$200/bulan** per project |
-| **Protected resources** (backend services) | 2 pertama included, lalu **$200/bulan** per resource tambahan |
+| **Per policy** | **$5/bulan** per policy — **tidak ada** base fee bulanan lain |
 | **Rules** | $1/bulan per rule |
 | **Requests** (rule evaluation) | $0.75 per 1 juta requests |
 | **Adaptive Protection** | Basic alerts gratis |
 
+Standard tier **tidak punya monthly base fee per project/resource** — biaya murni dari policy + rule + request di atas.
+
 ### Cloud Armor Enterprise
+
+Enterprise punya **2 mode pricing yang berbeda** — bukan satu harga yang sama:
 
 | Komponen | Enterprise Paygo | Enterprise Annual |
 |---------|-----------------|-------------------|
-| **Base fee** | **$3,000/bulan** per billing account | **$3,000/bulan** per billing account |
-| **Protected resources** | 100 pertama included, lalu **$30/bulan** per resource | 100 pertama included, lalu **$30/bulan** per resource |
+| **Base fee** | **~$200/bulan** (prorated) | **~$3,000/bulan** |
+| **Protected resources included** | **2** pertama | **100** pertama |
+| **Extra resource (setelah included)** | **$200/bulan** per resource | **$30/bulan** per resource |
 | **Rules** | **Included** (bundled) | **Included** (bundled) |
 | **Requests** | **Included** (bundled) | **Included** (bundled) |
 | **WAF rules** | **Included** | **Included** |
@@ -81,12 +88,11 @@ Standard tier:
   5 rules (IP block, geo block, SQLi, XSS, default)
   ~500,000 req/bulan
 
-  Base:                        ~$200/bulan (implicit)
-  Rules: 5 × $1              = $5/bulan
-  Requests: 0.5M × $0.75/1M  = $0.375/bulan
-  Protected resources: 1      = included (2 free)
+  Policy: 1 × $5              = $5/bulan
+  Rules: 5 × $1                = $5/bulan
+  Requests: 0.5M × $0.75/1M    = $0.375/bulan
 
-  Total: ~$205/bulan (~Rp 3,200,000)
+  Total: ~$10.40/bulan (~Rp 165,000)
 ```
 
 ### Skenario 2: Medium — 3 Apps, WAF + Rate Limiting
@@ -97,28 +103,36 @@ Standard tier:
   15 rules
   ~10M req/bulan
 
-  Base:                         ~$200/bulan
-  Extra resources: 3 × $200    = $600/bulan
-  Rules: 15 × $1               = $15/bulan
-  Requests: 10M × $0.75/1M     = $7.50/bulan
+  Policies: 2 × $5             = $10/bulan
+  Rules: 15 × $1                = $15/bulan
+  Requests: 10M × $0.75/1M      = $7.50/bulan
 
-  Total: ~$822.50/bulan (~Rp 13,000,000)
+  Total: ~$32.50/bulan (~Rp 515,000)
+
+  (Standard tidak charge per protected resource — hanya per policy,
+   rule, dan request. Charge per protected resource hanya berlaku
+   di Enterprise.)
 ```
 
 ### Skenario 3: Enterprise — 10+ Apps, Full Protection
 
 ```
-Enterprise tier:
+Enterprise Annual:
   1 billing account, 5 projects, 20 backend services
   50 rules, WAF, Adaptive Protection full
   ~100M req/bulan
 
-  Base: $3,000/bulan (semua included)
-  Extra resources: 0 (20 < 100 free)
+  Base: ~$3,000/bulan (100 protected resources included)
+  Extra resources: $0 (20 < 100 included)
   Rules: included
   Requests: included
 
-  Total: $3,000/bulan (~Rp 47,000,000)
+  Total: ~$3,000/bulan (~Rp 47,000,000)
+
+  (Kalau pakai Enterprise Paygo bukan Annual: base ~$200/bulan
+   tapi hanya 2 resource included, jadi 20 backend services =
+   18 extra × $200 = $3,600/bulan tambahan → ~$3,800/bulan total.
+   Untuk kasus 20 backend services, Enterprise Annual lebih hemat.)
 ```
 
 ### Standard vs Enterprise — Kapan Upgrade?
@@ -128,17 +142,20 @@ Decision flow:
 
   Berapa backend services?
        │
-       ├── < 5 backends, < 10 rules → STANDARD ($200–$1,000/mo)
+       ├── < 5 backends, < 10 rules → STANDARD ($10–$50/mo)
        │
        ├── 5–15 backends, banyak WAF rules
        │   │
-       │   └── Hitung: Standard cost > $2,500/mo?
-       │       ├── Ya → ENTERPRISE lebih hemat
+       │   └── Hitung: Standard cost mendekati Enterprise Paygo (~$200/mo base)?
+       │       ├── Ya → ENTERPRISE PAYGO lebih hemat (WAF & rules included)
        │       └── Tidak → tetap STANDARD
        │
-       └── > 15 backends, butuh Adaptive Protection full,
-           Threat Intelligence, DDoS bill protection
-           → ENTERPRISE ($3,000/mo)
+       └── > 15 backends (lebih dari batas 2/100 free resource),
+           butuh Adaptive Protection full, Threat Intelligence,
+           DDoS bill protection
+           → ENTERPRISE PAYGO (~$200/mo, cocok untuk <20 resource)
+             atau ENTERPRISE ANNUAL (~$3,000/mo, cocok untuk skala besar
+             karena 100 resource included + commitment discount)
 ```
 
 ---
@@ -263,8 +280,8 @@ Cloud Logging query untuk Cloud Armor:
 | Kelebihan | Kekurangan |
 |-----------|------------|
 | **Edge-based** — block di PoP, sebelum sampai server | **Butuh Load Balancer** — tidak bisa langsung ke VM (kecuali Network edge policy) |
-| **Native GCP** — integrasi seamless | **Berbayar** — minimum ~$200/bulan (Standard) |
-| **WAF preconfigured** — OWASP CRS out-of-the-box | **Enterprise mahal** — $3,000/bulan |
+| **Native GCP** — integrasi seamless | **Berbayar** — Standard mulai dari $5/policy + $1/rule/bulan |
+| **WAF preconfigured** — OWASP CRS out-of-the-box | **Enterprise mahal** — ~$200/bulan (Paygo) atau ~$3,000/bulan (Annual) |
 | **Adaptive Protection** — ML auto-detect DDoS | **Learning period** — 1 jam (Adaptive) / 24 jam (Network DDoS) |
 | **Rate limiting** — throttle + ban built-in | **Manual rule deployment** — Adaptive tidak auto-block |
 | **Global capacity** — Google network bandwidth | **CEL learning curve** — Advanced mode butuh belajar syntax |

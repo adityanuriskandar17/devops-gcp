@@ -74,7 +74,7 @@ Series:
 │  N2D                   │  ← AMD, lebih murah
 │  N4                    │  ← Terbaru, Intel
 │  T2D                   │  ← AMD, budget
-│  T2A                   │  ← ARM-based, experimental
+│  T2A                   │  ← ARM-based, GA sejak 2022
 └────────────────────────┘
 ```
 
@@ -86,9 +86,9 @@ Series:
 | **N1** | Intel Skylake | Legacy, sudah lama stabil | Generasi lama, harga kurang efisien, GCP recommend migrasi ke N2 | $$ |
 | **N2** | Intel Cascade Lake / Ice Lake | Performa konsisten, dedicated core, support local SSD, custom machine type | ~20% lebih mahal dari E2 | $$$ |
 | **N2D** | AMD EPYC Rome/Milan | Lebih murah ~10% dari N2, core count lebih banyak per VM | Beberapa software optimize untuk Intel, fitur sedikit lebih terbatas | $$ |
-| **N4** | Intel Sapphire Rapids | Performa per-core terbaik, generasi terbaru | Belum tersedia di semua region/zone, harga premium | $$$$ |
+| **N4** | Intel Emerald Rapids | Performa per-core terbaik, generasi terbaru | Belum tersedia di semua region/zone, harga premium | $$$$ |
 | **T2D** | AMD EPYC Milan | Paling murah setelah E2, dedicated core | Hanya predefined sizes (tidak bisa custom), fitur terbatas | $ |
-| **T2A** | Ampere Altra (ARM) | Hemat energi, murah | ARM architecture (tidak semua software kompatibel), experimental | $ |
+| **T2A** | Ampere Altra (ARM) | Hemat energi, murah | ARM architecture (tidak semua software kompatibel); GA sejak 2022, bukan experimental | $ |
 
 ### Panduan Pilih Series
 

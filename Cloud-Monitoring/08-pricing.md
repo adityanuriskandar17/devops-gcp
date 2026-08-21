@@ -16,7 +16,7 @@ Dokumentasi lengkap **komponen biaya** Cloud Monitoring dan Cloud Logging.
 | **Custom metrics** | 150 MB ingestion/bulan | $0.258 per MB setelah free tier |
 | **Prometheus metrics** | 150 MB ingestion/bulan | $0.258 per MB setelah free tier |
 | **Alerting policies** | 500 metric-based policies | — |
-| **Uptime checks** | 10 per project | $0.30/check/bulan setelahnya |
+| **Uptime check executions** | 1.000.000 executions/bulan | $0.30 per 1.000 executions setelahnya |
 | **Notification channels** | Semua gratis | — |
 | **API calls** | 1 juta calls/bulan | $0.01 per 1.000 calls setelahnya |
 | **Dashboard** | Unlimited | — |
@@ -29,7 +29,7 @@ GRATIS:
   ✅ Semua GCP built-in metrics (CPU, RAM, Disk, Network, dll)
   ✅ Dashboard (buat berapa pun)
   ✅ 500 alerting policies
-  ✅ 10 uptime checks
+  ✅ 1.000.000 uptime check executions/bulan (bukan dihitung per jumlah check)
   ✅ Semua notification channels (email, Slack, dll)
   ✅ Metrics Explorer (ad-hoc query)
   ✅ GKE system metrics
@@ -38,18 +38,20 @@ GRATIS:
 BAYAR:
   💰 Custom metrics > 150 MB
   💰 Prometheus metrics > 150 MB
-  💰 Uptime checks > 10
+  💰 Uptime check executions > 1.000.000/bulan ($0.30 per 1.000 executions)
   💰 API calls > 1 juta/bulan
 ```
 
 ### Estimasi Biaya
 
-| Skenario | Custom Metrics | Uptime Checks | Estimasi/bulan |
-|----------|---------------|---------------|----------------|
-| **Kecil** (5 VM, standard monitoring) | 0 MB (built-in saja) | 3 | **$0** |
-| **Medium** (20 VM, 10 custom metrics) | ~50 MB | 8 | **$0** (masih free tier) |
-| **Besar** (100 VM, 50 custom + Prometheus) | ~500 MB | 20 | **~$90 + $3 = ~$93** |
-| **Enterprise** (500 VM, heavy custom) | ~2 GB | 50 | **~$475 + $12 = ~$487** |
+**Catatan penting:** biaya uptime check dihitung dari **jumlah executions/bulan** (frequency × jumlah region × 30 hari), bukan dari jumlah check yang dibuat. Satu check saja dengan frequency 1 menit di 6 region sudah menghasilkan ~259.200 executions/bulan. Tabel di bawah mencantumkan asumsi frequency & region agar angka bisa direproduksi — sesuaikan dengan setup Anda sendiri.
+
+| Skenario | Custom Metrics | Uptime Checks (asumsi) | Executions/bulan | Estimasi/bulan |
+|----------|---------------|-------------------------|-------------------|----------------|
+| **Kecil** (5 VM, standard monitoring) | 0 MB (built-in saja) | 3 checks, 5 menit, 1 region | ~25.920 | **$0** (masih dalam 1.000.000 free) |
+| **Medium** (20 VM, 10 custom metrics) | ~50 MB | 8 checks, 5 menit, 1 region | ~69.120 | **$0** (masih free tier) |
+| **Besar** (100 VM, 50 custom + Prometheus) | ~500 MB | 20 checks, 1 menit, 6 region | ~5.184.000 | Custom: ~$90 + Uptime: ~$1.255 (4.184.000 exec di atas free tier × $0.30/1.000) = **~$1.345** |
+| **Enterprise** (500 VM, heavy custom) | ~2 GB | 50 checks, 1 menit, 6 region | ~12.960.000 | Custom: ~$475 + Uptime: ~$3.588 (11.960.000 exec di atas free tier × $0.30/1.000) = **~$4.063** |
 
 ---
 
@@ -109,7 +111,7 @@ BAYAR:
 | Gunakan built-in GCP metrics (jangan buat custom jika sudah ada) | 100% gratis |
 | Batasi custom metrics ke yang benar-benar dibutuhkan | Kurangi MB ingestion |
 | Sampling interval yang lebih lama untuk non-critical metrics | Kurangi data points |
-| Review uptime checks — hapus yang tidak terpakai | Tetap di free tier (10) |
+| Review uptime checks — hapus yang tidak terpakai, kurangi frequency/region jika tidak perlu | Kurangi total executions, tetap di free tier (1.000.000 executions/bulan) |
 
 ### Logging
 

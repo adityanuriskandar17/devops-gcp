@@ -297,7 +297,7 @@ Aktifkan SQL injection detection. Lihat detail di [04-waf-rules.md](04-waf-rules
   └──────────────────────────────────┘
 
   Conform action:   Allow
-  Exceed action:    Deny (403/404/502)
+  Exceed action:    Deny (403/404/429/502)
 ```
 
 | Field | Fungsi |
@@ -305,7 +305,7 @@ Aktifkan SQL injection detection. Lihat detail di [04-waf-rules.md](04-waf-rules
 | **Rate limit threshold** | Jumlah request maksimal per interval (misal: 100 req / 60 sec) |
 | **Key type** | Berdasarkan apa rate dihitung: IP, HTTP Header, X-Forwarded-For, HTTP Cookie, region, TLS fingerprint |
 | **Conform action** | Action jika di bawah limit (Allow) |
-| **Exceed action** | Action jika melebihi limit (Deny + status code) |
+| **Exceed action** | Action jika melebihi limit — Deny dengan status code **403, 404, 429, atau 502** (429 Too Many Requests paling umum untuk rate limiting) |
 
 ### Action: Rate-based Ban
 

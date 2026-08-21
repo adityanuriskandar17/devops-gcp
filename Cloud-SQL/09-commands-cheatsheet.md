@@ -133,7 +133,7 @@ gcloud sql instances clone SOURCE_INSTANCE CLONE_NAME \
 | Get connection name | `SQL` → instance → **Overview** | `gcloud sql instances describe INSTANCE --format="get(connectionName)"` |
 | Set authorized networks | `SQL` → instance → **Connections** → **Networking** | `gcloud sql instances patch INSTANCE --authorized-networks=IP/CIDR` |
 | Enable Private IP | `SQL` → instance → **Connections** → **Networking** | `gcloud sql instances patch INSTANCE --network=VPC_NAME` |
-| Require SSL | `SQL` → instance → **Connections** → **Security** | `gcloud sql instances patch INSTANCE --require-ssl` |
+| Require SSL | `SQL` → instance → **Connections** → **Security** | `gcloud sql instances patch INSTANCE --ssl-mode=ENCRYPTED_ONLY` (`--require-ssl` legacy, deprecated) |
 
 ### Cloud SQL Auth Proxy
 

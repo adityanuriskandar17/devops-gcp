@@ -50,6 +50,30 @@ Tutorial ini menjelaskan cara menjalankan API **NPS (Net Promoter Score)** berba
 
 ## 2. Menjalankan aplikasi
 
+### Install Node.js & npm
+
+VM ini sejauh ini hanya punya Nginx, MariaDB, dan Git (dari tutorial 01 & 02) — **Node.js belum terinstall**. Debian 12 (Bookworm) tidak menyediakan versi Node.js LTS terbaru di repo default, jadi install lewat **NodeSource setup script**:
+
+```bash
+$ curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+$ sudo apt install -y nodejs
+```
+
+Verifikasi:
+
+```bash
+$ node -v
+$ npm -v
+```
+```
+v20.x.x
+10.x.x
+```
+
+Setelah Node.js & npm terinstall, lanjut clone/jalankan aplikasi.
+
+### Jalankan Aplikasi
+
 Asumsikan repo sudah di-clone ke home (mis. `~/bosani-nps`):
 
 ```bash
@@ -397,6 +421,7 @@ $ curl -sS "http://<IP-VM>/api/nps/test_user"
 ### Checklist
 
 ```
+✅ Node.js & npm terinstall (via NodeSource setup script)
 ✅ MariaDB: database bosani_nps & tabel nps_score_tab sudah ada
 ✅ PM2 terinstall; app jalan via pm2 start (bukan npm start)
 ✅ pm2 startup + pm2 save → app auto-start saat VM reboot
@@ -408,6 +433,10 @@ $ curl -sS "http://<IP-VM>/api/nps/test_user"
 ### Commands Cheatsheet
 
 ```bash
+# Install Node.js & npm (sekali per VM)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
 # Install dependencies
 cd ~/bosani-nps && npm install
 

@@ -163,7 +163,7 @@ Lokasi fisik data center tempat VM akan berjalan.
 ║           ║  - Compatibility: beberapa software optimize untuk ║
 ║           ║    Intel                                           ║
 ╠═══════════╬════════════════════════════════════════════════════╣
-║           ║  + Generasi terbaru (Sapphire Rapids)             ║
+║           ║  + Generasi terbaru (Emerald Rapids)              ║
 ║  N4       ║  + Performa per-core tertinggi di general purpose ║
 ║           ║  - Belum tersedia di semua region                  ║
 ╠═══════════╬════════════════════════════════════════════════════╣
@@ -242,7 +242,7 @@ Kamu tentukan sendiri jumlah vCPU dan RAM.
 **Aturan custom:**
 - vCPU: 1, atau kelipatan 2 (2, 4, 6, 8, ...)
 - RAM: kelipatan 256 MB
-- RAM per vCPU: min 0.9 GB, max 6.5 GB (extended memory sampai 8 GB)
+- RAM per vCPU: 0.5 GB - 8 GB (rentang flat untuk E2 custom; series lain seperti N1 punya rentang berbeda)
 
 ```bash
 # gcloud: custom 6 vCPU, 12 GB RAM
@@ -264,7 +264,8 @@ Pilihan CPU fisik yang dipakai. Biasanya "Automatic" (GCP pilihkan).
 | **Automatic** (default) | GCP pilih yang terbaik tersedia, tidak perlu pusing | Bisa dapat CPU generasi lama |
 | **Intel Cascade Lake** | Performa bagus, stabil | Generasi lama |
 | **Intel Ice Lake** | Lebih cepat dari Cascade Lake | Tidak selalu tersedia |
-| **Intel Sapphire Rapids** | Terbaru, performa terbaik | Hanya di series tertentu (N4, C3) |
+| **Intel Sapphire Rapids** | Terbaru, performa terbaik | Hanya di series tertentu (C3) |
+| **Intel Emerald Rapids** | Generasi setelah Sapphire Rapids | Hanya di series tertentu (N4) |
 | **AMD EPYC Rome** | Harga lebih murah | Hanya di N2D/T2D |
 | **AMD EPYC Milan** | Lebih baru dari Rome | Hanya di N2D/T2D |
 
@@ -358,7 +359,7 @@ VM dengan enkripsi RAM (memory encryption). Data di RAM tetap terenkripsi bahkan
 | Opsi | Kelebihan | Kekurangan |
 |------|-----------|------------|
 | **Off** (default) | Tidak ada overhead performa | RAM tidak terenkripsi (standar cloud) |
-| **On** | Data di RAM terenkripsi (AMD SEV) | ~5% performance hit, hanya di N2D series, sedikit lebih mahal |
+| **On** | Data di RAM terenkripsi (AMD SEV) | ~5% performance hit, tersedia di N2D/C2D/C3D/C4D series, sedikit lebih mahal |
 
 **Kapan pakai:**
 - Data sangat sensitif (financial, healthcare)
@@ -420,7 +421,7 @@ gcloud compute images list --project=rocky-linux-cloud --no-standard-images
 | **pd-standard** (HDD) | ~0.75/GB | ~0.12 MB/s/GB | ~$0.048 | Paling murah | Lambat, boot time lama |
 | **pd-balanced** | ~6/GB | ~0.28 MB/s/GB | ~$0.108 | Balance harga & performa | Sedang di semua aspek |
 | **pd-ssd** | ~30/GB | ~0.48 MB/s/GB | ~$0.187 | Cepat, boot cepat | 2x harga pd-balanced |
-| **pd-extreme** | Custom | Custom | ~$0.125+ | IOPS tertinggi | Sangat mahal, N2/N2D only |
+| **pd-extreme** | Custom | Custom | ~$0.125+ | IOPS tertinggi | Sangat mahal, hanya N2 (shape 64+ vCPU), M2, M3 |
 
 ```
 ╔═════════════════════════════════════════════════════════╗
@@ -925,7 +926,7 @@ Bagaimana Access Scopes bekerja:
 **Saat klik [Enable]:**
 ```
   ⚠ Persyaratan:
-  ├── Machine type berubah ke N2D (AMD) — wajib AMD SEV support
+  ├── Machine type harus N2D/C2D/C3D/C4D (AMD) — wajib AMD SEV support
   ├── OS image harus support Confidential VM
   ├── Biaya sedikit lebih tinggi (~5%)
   └── Performance hit ~5% (overhead enkripsi RAM)
@@ -934,7 +935,7 @@ Bagaimana Access Scopes bekerja:
 | Kelebihan | Kekurangan |
 |-----------|------------|
 | Data di RAM terenkripsi | Performance hit ~5% |
-| Proteksi dari cloud provider | Hanya N2D series (AMD) |
+| Proteksi dari cloud provider | Hanya series tertentu (N2D/C2D/C3D/C4D, AMD) |
 | Compliance (HIPAA, PCI-DSS) | Sedikit lebih mahal |
 | Defense-in-depth | Tidak semua OS support |
 

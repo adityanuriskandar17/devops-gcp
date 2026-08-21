@@ -160,17 +160,11 @@ Komitmen penggunaan 1 atau 3 tahun untuk diskon.
 
 ---
 
-## Sustained Use Discounts (SUD)
+## Catatan: Tidak Ada Sustained Use Discounts (SUD) untuk Cloud SQL
 
-Diskon otomatis jika instance berjalan >25% waktu dalam sebulan.
+Berbeda dengan Compute Engine, **Cloud SQL tidak punya Sustained Use Discount**. Sejak 2020, Google menghapus SUD untuk Cloud SQL dan langsung menurunkan **list price** ke level harga SUD sebelumnya — jadi harga on-demand yang tercantum di atas **sudah** harga terbaik tanpa perlu diskon otomatis tambahan.
 
-| Penggunaan | Diskon |
-|------------|--------|
-| 25-50% bulan | ~20% |
-| 50-75% bulan | ~40% |
-| 75-100% bulan | ~60% |
-
-SUD otomatis — tidak perlu konfigurasi apapun.
+Satu-satunya diskon volume/komitmen untuk Cloud SQL adalah **Committed Use Discounts (CUD)** di atas — tidak ada diskon otomatis berbasis persentase waktu pemakaian bulanan seperti SUD di Compute Engine.
 
 ---
 

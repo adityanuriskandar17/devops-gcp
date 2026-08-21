@@ -101,7 +101,7 @@ Read replica = salinan database yang menerima perubahan dari primary secara **as
 |--------|-------------|
 | MySQL | 10 |
 | PostgreSQL | 10 |
-| SQL Server | Tidak didukung (gunakan Always On di SQL Server Enterprise) |
+| SQL Server | 8 (Enterprise edition — SQL Server 2017/2019/2022 Enterprise) |
 
 ---
 

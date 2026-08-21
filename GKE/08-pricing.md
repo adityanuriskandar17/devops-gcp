@@ -19,7 +19,7 @@ Komponen biaya **GKE** dan perbandingan Autopilot vs Standard, berorientasi **GC
 | Mode | Fee |
 |------|-----|
 | Autopilot | **$0.10/jam** (~$73/bulan) |
-| Standard (zonal) | **Free** (1 cluster per project) |
+| Standard (zonal) | **$0.10/jam** (~$73/bulan) — dibebankan, tapi ada **credit $74.40/bulan per billing account** yang otomatis meng-offset biaya ini (efektif menutupi ~1 zonal cluster per billing account, bukan per project) |
 | Standard (regional) | **$0.10/jam** (~$73/bulan) |
 
 ---

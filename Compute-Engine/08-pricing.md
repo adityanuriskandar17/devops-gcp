@@ -145,7 +145,7 @@ GCP **otomatis** kasih diskon kalau VM jalan terus dalam 1 bulan. Tidak perlu co
 | Kelebihan | Kekurangan |
 |-----------|------------|
 | Otomatis, tidak perlu commit | Diskon tidak sebesar CUD |
-| Berlaku untuk semua VM yang running | Hanya untuk N1, N2, N2D (E2 tidak dapat SUD) |
+| Berlaku untuk semua VM yang running | Hanya untuk N1, N2, N2D, C2, M1, M2 (E2 tidak dapat SUD) |
 | Tidak ada penalty kalau stop VM | |
 
 ---

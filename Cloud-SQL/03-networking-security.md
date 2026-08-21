@@ -148,9 +148,11 @@ Opsi yang umum: **Enforce SSL** (wajibkan koneksi terenkripsi), unduh **server c
 
 ```bash
 gcloud sql instances patch INSTANCE_ID \
-  --require-ssl \
+  --ssl-mode=ENCRYPTED_ONLY \
   --project=PROJECT_ID
 ```
+
+> **Catatan:** `--require-ssl` adalah flag **legacy** dan sudah digantikan oleh `--ssl-mode` (nilai umum: `ENCRYPTED_ONLY`, `TRUSTED_CLIENT_CERTIFICATE_REQUIRED`, `ALLOW_UNENCRYPTED_AND_ENCRYPTED`). Gunakan `--ssl-mode` untuk instance baru maupun saat memperbarui konfigurasi SSL instance existing.
 
 > Untuk **client certs**, biasanya melalui Console **Security** atau perintah `gcloud sql ssl-certs create` (MySQL) / setara untuk Postgres sesuai dokumentasi versi Anda.
 

@@ -170,7 +170,7 @@ Console: Cloud Armor → (policy) → + ADD RULE
   │  └──────────────────────────────────────┘                    │
   │                                                              │
   │  Conform action:  Allow                                       │
-  │  Exceed action:   Deny (429)                                  │
+  │  Exceed action:   Deny (403/404/429/502)                      │
   └──────────────────────────────────────────────────────────────┘
 
   Priority: 4000
@@ -202,7 +202,7 @@ Console: Cloud Armor → (policy) → + ADD RULE
   │  └──────────────────────────────────────┘                    │
   │                                                              │
   │  Conform action:  Allow                                       │
-  │  Exceed action:   Deny (429)                                  │
+  │  Exceed action:   Deny (403/404/429/502)                      │
   └──────────────────────────────────────────────────────────────┘
 ```
 

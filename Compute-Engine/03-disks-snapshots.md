@@ -25,7 +25,7 @@ Nama unik untuk disk. Tips: `{vm-name}-{role}-disk` (contoh: `ftlgymweb-data-dis
 | Pilihan | Kelebihan | Kekurangan |
 |---------|-----------|------------|
 | **Single zone** (default) | Murah, latensi rendah | Hilang kalau zone down |
-| **Regional** (replika di 2 zone) | High availability, auto-failover | 2x harga, hanya pd-balanced dan pd-ssd |
+| **Regional** (replika di 2 zone) | High availability, auto-failover | 2x harga, pd-standard/pd-balanced/pd-ssd, hanya di machine type E2/N1/N2/N2D |
 
 **Rekomendasi:** Single zone untuk kebanyakan use case. Regional untuk database production yang butuh HA.
 
@@ -79,7 +79,7 @@ Disk type:
 | **pd-standard** | ~0.75/GB | ~0.12 MB/s/GB | ~$0.048 | Paling murah | Lambat, boot lama |
 | **pd-balanced** | ~6/GB | ~0.28 MB/s/GB | ~$0.108 | Balance harga & performa, default | Sedang di semua aspek |
 | **pd-ssd** | ~30/GB | ~0.48 MB/s/GB | ~$0.187 | Cepat, boot cepat | 2x harga pd-balanced |
-| **pd-extreme** | Custom (max 120K) | Custom | ~$0.125+ | IOPS tertinggi, bisa set IOPS sendiri | Mahal, N2/N2D only, min 500 GB |
+| **pd-extreme** | Custom (max 120K) | Custom | ~$0.125+ | IOPS tertinggi, bisa set IOPS sendiri | Mahal, hanya N2 (shape 64+ vCPU), M2, M3, min 500 GB |
 
 ##### Hyperdisk - Generasi Baru
 

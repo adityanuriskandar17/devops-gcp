@@ -549,6 +549,9 @@ gcloud container clusters update my-cluster \
     --enable-dataplane-v2-flow-observability
 
 # Deploy Hubble UI (manual)
+# ⚠ Verifikasi dulu link manifest ini di dokumentasi resmi GKE (Dataplane V2 /
+# flow observability) sebelum dipakai — path di bawah belum terverifikasi
+# stabil/current dan berisiko jadi dead link:
 kubectl apply -f https://raw.githubusercontent.com/cilium/hubble/main/tutorials/deploy-hubble-ui.yaml
 
 # Akses Hubble UI via port-forward

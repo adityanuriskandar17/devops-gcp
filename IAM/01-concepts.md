@@ -83,7 +83,9 @@ Contoh inheritance:
 | Konsisten across resources | Tidak bisa "revoke" inherited permission di level bawah |
 | Kurangi repetitive assignments | — |
 
-**Penting:** IAM bersifat **additive** — permission hanya bisa ditambah, tidak bisa dikurangi di level bawah. Jika user dapat `Editor` di org level, tidak bisa di-restrict menjadi `Viewer` di project level.
+**Penting:** IAM **allow policy** bersifat **additive** — permission hanya bisa ditambah, tidak bisa dikurangi di level bawah. Jika user dapat `Editor` di org level, tidak bisa di-restrict menjadi `Viewer` di project level hanya dengan allow policy.
+
+**Catatan:** Google Cloud juga punya **IAM Deny Policies** (GA) — mekanisme terpisah yang memungkinkan admin secara eksplisit **deny** permission tertentu pada suatu resource. Deny policy ini **override allow policy** dan **inherited ke bawah** melalui resource hierarchy, sehingga permission yang di-inherit dari level atas TETAP BISA direstrict/diblokir di level bawah menggunakan deny policy — bukan lewat allow policy biasa.
 
 ---
 

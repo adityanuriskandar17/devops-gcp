@@ -12,7 +12,7 @@ Dokumentasi lengkap **Synthetic Monitoring** di Google Cloud Monitoring — peng
 
 ## Apa itu Synthetic Monitoring?
 
-Synthetic Monitoring adalah fitur di Cloud Monitoring yang memungkinkan **pengujian proaktif** terhadap aplikasi/endpoint menggunakan **script custom** yang berjalan di **Cloud Function (2nd gen)**. Berbeda dengan Uptime Checks yang hanya cek "apakah endpoint hidup?", Synthetic Monitoring bisa **menjalankan skenario lengkap** seperti login, klik button, cek API chain, dsb.
+Synthetic Monitoring adalah fitur di Cloud Monitoring yang memungkinkan **pengujian proaktif** terhadap aplikasi/endpoint menggunakan **script custom** yang berjalan di **Cloud Run functions** (rebrand 2024 dari Cloud Functions 2nd gen). Berbeda dengan Uptime Checks yang hanya cek "apakah endpoint hidup?", Synthetic Monitoring bisa **menjalankan skenario lengkap** seperti login, klik button, cek API chain, dsb.
 
 ```
 Perbandingan: Uptime Checks vs Synthetic Monitoring
@@ -134,7 +134,7 @@ Console: Monitoring → Synthetic monitoring → [+ CREATE SYNTHETIC MONITOR]
 
 ### Apa itu?
 
-Menulis **script custom** yang di-deploy sebagai **Cloud Function (2nd gen)**. Cloud Monitoring akan menjalankan function ini secara periodik dan melaporkan hasilnya.
+Menulis **script custom** yang di-deploy sebagai **Cloud Run functions**. Cloud Monitoring akan menjalankan function ini secara periodik dan melaporkan hasilnya.
 
 ### Console Form: Create Synthetic Check
 
@@ -264,7 +264,7 @@ Klik [+ ADD LABEL]:
 
 #### Cloud Function — CREATE FUNCTION
 
-Klik **CREATE FUNCTION** membuka halaman **Create function** — ini adalah wizard standar Cloud Functions (2nd gen) yang terintegrasi langsung.
+Klik **CREATE FUNCTION** membuka halaman **Create function** — ini adalah wizard standar Cloud Run functions (2nd gen Cloud Functions) yang terintegrasi langsung.
 
 ##### Layout Halaman Create Function
 
@@ -1311,7 +1311,7 @@ Decision Tree:
 
 ## Cloud Function — Infrastruktur di Balik Synthetic
 
-Synthetic Monitoring menggunakan **Cloud Function (2nd gen)** sebagai infrastruktur eksekusi. Berikut yang perlu dipahami:
+Synthetic Monitoring menggunakan **Cloud Run functions** (rebrand 2024 dari Cloud Functions 2nd gen) sebagai infrastruktur eksekusi. Berikut yang perlu dipahami:
 
 ```
 Arsitektur:
@@ -1515,7 +1515,7 @@ Synthetic Monitoring:
   │                                                              │
   └──────────────────────────────────────────────────────────────┘
 
-  Infrastruktur: Cloud Function (2nd gen)
+  Infrastruktur: Cloud Run functions (2nd gen Cloud Functions)
   Bahasa: JavaScript (Node.js + Mocha + Chai)
   Cost: Kebanyakan GRATIS (free tier besar)
   Integrasi: Dashboard + Alerting + Cloud Logging

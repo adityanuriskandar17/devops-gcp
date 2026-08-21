@@ -52,7 +52,7 @@ Layer keamanan:
 
 | Setting | Opsi |
 |---------|------|
-| **Min TLS version** | TLS 1.0, 1.1, **1.2** (recommended), 1.3 |
+| **Min TLS version** | TLS 1.0, 1.1, **1.2** (recommended) — maksimum yang bisa dipilih sebagai floor; LB tetap bisa nego up to TLS 1.3 dengan client yang mendukung |
 | **Profile** | COMPATIBLE (luas), MODERN (aman), RESTRICTED (paling aman), CUSTOM |
 
 ---

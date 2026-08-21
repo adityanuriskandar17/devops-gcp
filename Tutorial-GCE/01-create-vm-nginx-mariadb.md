@@ -360,7 +360,7 @@ $ sudo mysql_secure_installation
 |---|-----------|---------|--------|
 | 1 | Current root password | Enter (kosong) | Fresh install belum ada password |
 | 2 | Switch to unix_socket auth | Y | Hanya user system `root` yang bisa login sebagai DB root |
-| 3 | Change root password | Y → `bosani` | Root harus punya password untuk keamanan |
+| 3 | Change root password | Y → `bosani` | Root harus punya password untuk keamanan (⚠️ `bosani` dipakai di sini hanya sebagai contoh tutorial — di deployment nyata pakai password yang kuat & unik, jangan hardcode di file/README) |
 | 4 | **Remove anonymous users** | **Y** | Anonymous user bisa login tanpa username — risiko keamanan |
 | 5 | **Disallow root login remotely** | **Y** | Root hanya boleh login dari localhost — mencegah brute force |
 | 6 | **Remove test database** | **Y** | Test DB bisa diakses oleh siapa saja termasuk anonymous — hapus! |
@@ -390,6 +390,8 @@ Setelah mysql_secure_installation:
   └──────────────────────────────────────────────────────────┘
 ```
 
+> ⚠️ **Catatan keamanan:** Password `bosani` di atas hanya contoh untuk tutorial ini. Untuk deployment nyata, gunakan password yang kuat (kombinasi acak panjang) dan jangan pernah menuliskan password asli di dokumentasi/README/repo.
+
 ---
 
 ## 6. Buat Administrative User
@@ -409,7 +411,7 @@ MariaDB [(none)]>
 ### Create Admin User
 
 ```sql
-GRANT ALL ON *.* TO 'admin'@'localhost' IDENTIFIED BY 'password' WITH GRANT OPTION;
+GRANT ALL ON bosani_nps.* TO 'admin'@'localhost' IDENTIFIED BY 'GANTI_DENGAN_PASSWORD_KUAT';
 ```
 
 **Penjelasan:**
@@ -417,10 +419,13 @@ GRANT ALL ON *.* TO 'admin'@'localhost' IDENTIFIED BY 'password' WITH GRANT OPTI
 | Bagian | Arti |
 |--------|------|
 | `GRANT ALL` | Berikan semua permission (SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, dll) |
-| `ON *.*` | Pada semua database dan semua table |
+| `ON bosani_nps.*` | Hanya pada database `bosani_nps` dan semua table di dalamnya — **bukan** `*.*` (semua database), supaya user ini tidak punya akses ke database lain |
 | `TO 'admin'@'localhost'` | Ke user `admin` yang login dari `localhost` |
-| `IDENTIFIED BY 'password'` | Dengan password `password` |
-| `WITH GRANT OPTION` | User ini juga bisa memberikan permission ke user lain |
+| `IDENTIFIED BY 'GANTI_DENGAN_PASSWORD_KUAT'` | Ganti dengan password yang kuat & unik — jangan pakai literal `password` atau password lemah lainnya |
+
+> ⚠️ **Keamanan:** `WITH GRANT OPTION` **sengaja tidak dipakai** di sini — user aplikasi (`admin`) tidak perlu bisa memberikan permission ke user lain. Menambahkan `WITH GRANT OPTION` tanpa alasan kuat, ditambah password lemah/hardcoded, adalah anti-pattern keamanan yang harus dihindari di deployment nyata.
+>
+> Catatan: karena database `bosani_nps` baru dibuat di [§7 Operasi Database](#7-operasi-database), MariaDB tetap mengizinkan `GRANT` pada database yang belum ada — privilege ini baru berlaku begitu database dibuat.
 
 ### Apply Privileges
 
@@ -444,19 +449,31 @@ exit;
 │  ├── Tidak perlu password                                        │
 │  └── Hanya bisa dari user system root/sudo                       │
 │                                                                  │
-│  Cara 2: mysql -u root -p                                        │
-│  ├── Login sebagai DB user root                                  │
-│  ├── Harus masukkan password (bosani)                            │
+│  Cara 2: sudo mysql -u root -p                                   │
+│  ├── Login sebagai DB user root (via sudo)                       │
+│  ├── Password (bosani) diminta, tapi diabaikan oleh unix_socket  │
 │  ├── Bisa login sebagai user lain: mysql -u admin -p             │
-│  └── Menggunakan password authentication                         │
+│  └── User lain (misal admin) tetap pakai password authentication │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-### Test Login dengan Password
+> ⚠️ **`mysql -u root -p` TANPA `sudo` akan GAGAL.** Karena root sudah di-set pakai `unix_socket` authentication (step 2 di `mysql_secure_installation`), MariaDB mengecek apakah **OS user** yang connect bernama `root` — password sama sekali tidak diperiksa untuk plugin ini. User SSH biasa (bukan `root`) yang menjalankan `mysql -u root -p` akan selalu mendapat `ERROR 1698 (28000): Access denied for user 'root'@'localhost'`, berapa pun password yang diketik. Gunakan `sudo mariadb` atau `sudo mysql -u root -p` supaya proses berjalan sebagai OS user `root`.
+
+### Test Login sebagai Root
 
 ```bash
-$ mysql -u root -p
-Enter password: bosani
+$ sudo mariadb
+```
+```
+Welcome to the MariaDB monitor.
+MariaDB [(none)]>
+```
+
+Login berhasil karena dijalankan dengan `sudo` (OS user `root`) — bukan karena password. Untuk user selain root (misalnya `admin`, yang dibuat dengan password authentication), login dengan password biasa tetap berfungsi normal:
+
+```bash
+$ mysql -u admin -p
+Enter password: GANTI_DENGAN_PASSWORD_KUAT
 ```
 ```
 Welcome to the MariaDB monitor.
@@ -631,9 +648,10 @@ sudo systemctl stop nginx         # stop
 sudo nano /etc/nginx/sites-available/default  # edit config
 
 # MariaDB
-sudo mariadb                      # login sebagai root (no password)
-mysql -u root -p                  # login dengan password
-mysql -u admin -p                 # login sebagai admin
+sudo mariadb                      # login sebagai root (unix_socket, no password)
+mysql -u admin -p                 # login sebagai admin (password authentication)
+# NB: "mysql -u root -p" TANPA sudo akan gagal (Access denied) karena root
+#     memakai unix_socket auth — gunakan "sudo mariadb" untuk login sebagai root
 sudo systemctl status mariadb     # cek status
 sudo systemctl restart mariadb    # restart
 

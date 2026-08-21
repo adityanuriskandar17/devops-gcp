@@ -179,6 +179,14 @@ Strategi: Nginx di VM frontend melayani file statis (SPA) **dan** mem-proxy requ
 
 ### 7.1 Build & salin file
 
+0. VM frontend ini juga belum punya Node.js/npm (baru Nginx & Git dari §4–§5) — install dulu seperti di [tutorial 03 §2](03-integrasikan-database-backend-nginx.md#2-menjalankan-aplikasi):
+
+```bash
+$ curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+$ sudo apt install -y nodejs
+$ node -v && npm -v
+```
+
 1. Di VM frontend, build project:
 
 ```bash
@@ -317,6 +325,7 @@ Browser hanya bicara ke IP frontend; Nginx frontend yang meneruskan `/api/...` k
 ✅ Firewall HTTP/HTTPS aktif; SSH ke VM frontend berhasil
 ✅ Nginx terinstall; halaman default nginx terbuka dari External IP
 ✅ Git terinstall; repo frontend di GitHub; clone via SSH di VM frontend
+✅ Node.js & npm terinstall (via NodeSource setup script)
 ✅ npm run build → dist/ di-copy ke /var/www/html/
 ✅ api-config.js dibuat (value kosong agar pakai proxy Nginx)
 ✅ Nginx: location / → SPA statis, location /api/ → proxy_pass ke IP backend
@@ -337,6 +346,10 @@ sudo systemctl status nginx
 # Git
 sudo apt install git-all
 git config --global user.name "..." && git config --global user.email "..."
+
+# Node.js & npm (sekali per VM)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
 
 # Deploy build
 npm run build
